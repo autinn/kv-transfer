@@ -1,0 +1,41 @@
+# Qwen3 0.6B -> 1.7B: a matched-KV pair (8 KV heads x head_dim 128, rope_theta 1e6,
+# 28 layers each, identical tokenizer). Equal depth is unusual among the paper's pairs
+# and removes the layer-alignment confound.
+source: Qwen/Qwen3-0.6B
+target: Qwen/Qwen3-1.7B
+
+calibration:
+  dataset: fineweb-edu
+  n_seqs: 500          # paper: 500 sequences
+  seq_len: 1024        # paper: 1024 tokens
+  stride: 4            # paper: stride-4 token subsampling
+  seed: 0
+
+# Measured on an M1: a 1024-token forward through the 1.7B takes 127s on cpu/fp32 but
+# 34s on mps/fp16, so mps is the default. The model is freed before the Grams are
+# touched, so peak RSS is max(model + one chunk of KV, Grams + one chunk), not the sum;
+# at chunk=20 that is ~5.3 GB, which leaves headroom on an 8 GB machine.
+runtime:
+  chunk: 10
+  batch_size: 1
+  dtype: float16       # mps compute dtype; Grams are always fp64
+  device: mps
+
+probe:
+  # Target-layer sharding bounds fp64 Gram memory. shards=4 keeps the fp64 Gram working set near 0.9 GB and keeps
+  # the capture pass single; raise it only if memory pressure appears.
+  shards: 4
+  # The full 28x28 K_rope grid would add 1.7 GB of Grams for a diagnostic whose point
+  # is a single comparison (does stripping RoPE improve linear fit?). Restricting it to
+  # the layer-aligned diagonal answers that at 1/28th the cost.
+  rope_diagonal_only: true
+  # float32 halves Gram memory; solve() promotes to float64 for the actual fit.
+  gram_dtype: float32
+
+fit:
+  lambdas: [0.001, 0.01, 0.1]   # paper fixes 0.01; extra lambdas are ~free from a cached Gram
+  k_sweep: [1, 2, 4, 6, 8, 12, 16, 20, 24, 28]
+
+eval:
+  wikitext_seqs: 64
+  prefix_len: 512

@@ -44,18 +44,22 @@ class RidgeSolution:
 
 def solve(acc: GramAccumulator, lam: float = 0.01, jitter: float = 1e-8) -> RidgeSolution:
     """Ridge solve with intercept, from accumulated statistics."""
+    # Promote to float64 for the solve regardless of accumulator precision: centering
+    # (`xtx - n*outer(mx,mx)`) is cancellation-prone, and the promotion is free compared
+    # with the Cholesky itself.
     n = acc.n
     if n <= acc.d_in:
         raise ValueError(
             f"underdetermined: n={n} <= d_in={acc.d_in}; capture more tokens"
         )
 
-    mx = acc.sx / n                                   # (d_in,)
-    my = acc.sy / n                                   # (d_out,)
+    f64 = torch.float64
+    mx = (acc.sx / n).to(f64)                         # (d_in,)
+    my = (acc.sy / n).to(f64)                         # (d_out,)
 
     # Centered second moments: Cov(X,X) and Cov(X,Y), scaled by n.
-    cxx = acc.xtx - n * torch.outer(mx, mx)
-    cxy = acc.xty - n * torch.outer(mx, my)
+    cxx = acc.xtx.to(f64) - n * torch.outer(mx, mx)
+    cxy = acc.xty.to(f64) - n * torch.outer(mx, my)
 
     d = acc.d_in
     eye = torch.eye(d, dtype=cxx.dtype, device=cxx.device)
@@ -75,7 +79,7 @@ def solve(acc: GramAccumulator, lam: float = 0.01, jitter: float = 1e-8) -> Ridg
 
     # In-sample R^2 per output dim, computed from the sufficient statistics:
     #   RSS = SYY_c - 2 W^T CXY + W^T CXX W   (diagonal terms only)
-    syy_c = acc.syy - n * my * my                      # centered total SS
+    syy_c = acc.syy.to(f64) - n * my * my                      # centered total SS
     rss = syy_c - 2.0 * (W * cxy).sum(0) + ((cxx @ W) * W).sum(0)
     rss = rss.clamp_min(0.0)
     r2 = 1.0 - rss / syy_c.clamp_min(1e-12)

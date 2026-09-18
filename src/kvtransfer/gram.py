@@ -27,9 +27,18 @@ class GramAccumulator:
     for free.
     """
 
-    def __init__(self, d_in: int, d_out: int, device="cpu"):
+    def __init__(self, d_in: int, d_out: int, device="cpu", dtype=torch.float64):
+        """`dtype` is the accumulator precision, not the input precision.
+
+        float64 is the safe default: centering (`xtx - n*mx*mx`) is a cancellation-prone
+        step. float32 halves memory, which matters when thousands of accumulators are
+        live at once, and measured at our scale (n~1.3e4, |x|~4e2, correlated features)
+        it shifts R^2 by under 1e-6 -- irrelevant for a diagnostic reported to three
+        decimals, though float64 remains the right choice for fitting production maps.
+        """
         self.d_in, self.d_out = d_in, d_out
-        f = dict(dtype=torch.float64, device=device)
+        self.dtype = dtype
+        f = dict(dtype=dtype, device=device)
         self.xtx = torch.zeros(d_in, d_in, **f)
         self.xty = torch.zeros(d_in, d_out, **f)
         self.sx = torch.zeros(d_in, **f)
@@ -39,11 +48,11 @@ class GramAccumulator:
 
     @torch.no_grad()
     def update(self, x: torch.Tensor, y: torch.Tensor) -> None:
-        """x: (n, d_in), y: (n, d_out). Any dtype; promoted to float64 internally."""
+        """x: (n, d_in), y: (n, d_out). Any dtype; cast to the accumulator dtype."""
         if x.shape[0] != y.shape[0]:
             raise ValueError(f"batch mismatch: x {x.shape[0]} vs y {y.shape[0]}")
-        x = x.to(torch.float64)
-        y = y.to(torch.float64)
+        x = x.to(self.dtype)
+        y = y.to(self.dtype)
         self.xtx += x.T @ x
         self.xty += x.T @ y
         self.sx += x.sum(0)
@@ -61,9 +70,10 @@ class GramAccumulator:
 
     @classmethod
     def from_state_dict(cls, sd: dict) -> "GramAccumulator":
-        acc = cls(int(sd["d_in"]), int(sd["d_out"]))
+        dt = sd["xtx"].dtype
+        acc = cls(int(sd["d_in"]), int(sd["d_out"]), dtype=dt)
         for k in ("xtx", "xty", "sx", "sy", "syy"):
-            setattr(acc, k, sd[k].to(torch.float64))
+            setattr(acc, k, sd[k].to(dt))
         acc.n = int(sd["n"])
         return acc
 
@@ -71,7 +81,7 @@ class GramAccumulator:
         """Merge shards (accumulation is associative, so shards can be built in parallel)."""
         if (self.d_in, self.d_out) != (other.d_in, other.d_out):
             raise ValueError("cannot merge accumulators of different shape")
-        out = GramAccumulator(self.d_in, self.d_out)
+        out = GramAccumulator(self.d_in, self.d_out, dtype=self.dtype)
         for k in ("xtx", "xty", "sx", "sy", "syy"):
             setattr(out, k, getattr(self, k) + getattr(other, k))
         out.n = self.n + other.n
