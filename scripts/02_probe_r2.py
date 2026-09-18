@@ -157,31 +157,54 @@ def main():
         sk, sv, skr = capture_chunk(cfg["source"], chunk_ids, rt, stride, want_rope=True)
         tk, tv, tkr = capture_chunk(cfg["target"], chunk_ids, rt, stride, want_rope=True)
 
-        per_head = lambda x: x.permute(0, 2, 1, 3, 4).reshape(x.shape[0], H, -1, D)
-        SK, SV, SKR = per_head(sk), per_head(sv), per_head(skr)
-        TK, TV, TKR = per_head(tk), per_head(tv), per_head(tkr)
+        # permute(...).reshape(...) cannot return a view, so each of these six tensors
+        # is a full copy. Converting all six at once doubled peak memory and pushed an
+        # already-tight machine into swap, so each source tensor is converted, consumed
+        # and freed in turn instead.
+        def per_head(x):
+            return x.permute(0, 2, 1, 3, 4).reshape(x.shape[0], H, -1, D)
 
-        # Every shard consumes this chunk before it is freed: capture cost is paid once.
+        TK, TV = per_head(tk), per_head(tv)
+        free(tk, tv)
+        TKR = per_head(tkr) if rope_diag else None
+        free(tkr)
+
+        # One source tensor in memory at a time; every shard consumes it before it goes.
+        SK = per_head(sk); free(sk)
         for grams, tgt_layers in zip(all_grams, tgt_groups):
             for ls in range(Ls):
                 for j, lt in enumerate(tgt_layers):
                     for h in range(H):
                         grams["k_content"][ls][j][h].update(SK[ls, h], TK[lt, h])
+        free(SK)
+
+        SV = per_head(sv); free(sv)
+        for grams, tgt_layers in zip(all_grams, tgt_groups):
+            for ls in range(Ls):
+                for j, lt in enumerate(tgt_layers):
+                    for h in range(H):
                         grams["v"][ls][j][h].update(SV[ls, h], TV[lt, h])
-                        if not rope_diag:
-                            grams["k_rope"][ls][j][h].update(SKR[ls, h], TKR[lt, h])
+        free(SV, TV)
+
+        SKR = per_head(skr); free(skr)
+        for grams, tgt_layers in zip(all_grams, tgt_groups):
             if rope_diag:
                 for lt in tgt_layers:
                     if lt < Ls:                      # layer-aligned diagonal
                         for h in range(H):
                             grams["k_rope"][lt][h].update(SKR[lt, h], TKR[lt, h])
+            else:
+                for ls in range(Ls):
+                    for j, lt in enumerate(tgt_layers):
+                        for h in range(H):
+                            grams["k_rope"][ls][j][h].update(SKR[ls, h], TKR[lt, h])
+        free(SKR, TKR)
 
         n_obs = all_grams[0]["k_content"][0][0][0].n
         el = time.time() - t0
         eta = el / (ci + 1) * (n_chunks - ci - 1)
         print(f"  chunk {ci+1}/{n_chunks}: {min(c0+chunk, ids.shape[0])}/{ids.shape[0]} seqs, "
               f"n={n_obs} obs, {el/60:.1f}m elapsed, ~{eta/60:.0f}m left", flush=True)
-        free(sk, sv, skr, tk, tv, tkr, SK, SV, SKR, TK, TV, TKR)
 
     print("\nsolving ...", flush=True)
     r2["k_rope"].fill_(float("nan"))     # cells never fitted stay NaN, not 0

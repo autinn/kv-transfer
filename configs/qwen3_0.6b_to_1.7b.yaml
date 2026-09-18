@@ -16,7 +16,7 @@ calibration:
 # touched, so peak RSS is max(model + one chunk of KV, Grams + one chunk), not the sum;
 # at chunk=20 that is ~5.3 GB, which leaves headroom on an 8 GB machine.
 runtime:
-  chunk: 10
+  chunk: 5
   batch_size: 1
   dtype: float16       # mps compute dtype; Grams are always fp64
   device: mps
