@@ -1,0 +1,27 @@
+# Self-test: 0.6B -> 0.6B. Exercises the whole pipeline (probe -> fit -> eval) on one
+# small model, so every code path is verified without needing the 1.7B resident.
+# The mapper should come out near-identity and retention near 100%.
+source: Qwen/Qwen3-0.6B
+target: Qwen/Qwen3-0.6B
+calibration:
+  dataset: fineweb-edu
+  n_seqs: 4
+  seq_len: 512
+  stride: 4
+  seed: 0
+runtime:
+  chunk: 2
+  batch_size: 1
+  dtype: float32
+  device: cpu
+probe:
+  shards: 1
+  gram_dtype: float32
+  rope_diagonal_only: true
+fit:
+  lambdas: [0.01]
+  k_sweep: [1, 2]
+eval:
+  wikitext_seqs: 4
+  seq_len: 512
+  prefix_len: 256

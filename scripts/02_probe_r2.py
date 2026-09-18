@@ -1,36 +1,36 @@
 """Stage A: the paper's linear-structure probe.
 
-For every (source layer, target layer, head) cell, fit a single-source OLS/ridge map in
+For every (source layer, target layer, head) cell, fit a single-source ridge map in
 content space and record R^2. This is the paper's central evidence -- if cross-model KV
 is linearly related, it shows up here -- and it is also the input to cross-layer source
 selection in Stage B.
 
-Memory discipline, for an 8 GB machine:
-  * the two models are never resident at once (chunked: capture source, free, capture
-    target, free, accumulate, repeat)
-  * activations are held only for one chunk of batches, in fp16
-  * Gram accumulators are float32 (promoted to float64 inside `solve`), which halves
-    the working set to ~1.7 GB for the full 28x28x8 grid
+Memory discipline (developed on an 8 GB machine):
+  * the two models are never resident at once: capture from the source, free it, then
+    capture from the target
+  * activations live only for one chunk of sequences, in fp16, and each derived view is
+    freed as soon as it has been consumed
+  * statistics live in a few large contiguous tensors (see `batched_gram`) rather than
+    one accumulator per cell -- the per-cell version needed 12,768 small allocations and
+    fragmented the heap badly enough to force swapping
 
-Output: results/probe_r2*.pt with R^2 arrays of shape (n_src, n_tgt, n_heads) for
-K_content, K_rope and V.
+Output: results/probe_r2*.pt with R^2 of shape (n_src, n_tgt, n_heads) for K_content,
+K_rope (layer-aligned diagonal only by default) and V.
 """
 
 from __future__ import annotations
 
 import argparse
 import gc
-import json
 import time
 from pathlib import Path
 
 import torch
 import yaml
 
+from kvtransfer.batched_gram import BatchedGrid, DiagonalGrid
 from kvtransfer.capture import KVCapture
 from kvtransfer.data import batches, cached_calibration
-from kvtransfer.gram import GramAccumulator
-from kvtransfer.ridge import solve
 from kvtransfer.rope import apply_rope, rope_tables_for
 from kvtransfer.stream import subsample
 
@@ -55,25 +55,29 @@ def free(*objs):
         torch.mps.empty_cache()
 
 
+def per_head(x: torch.Tensor, H: int, D: int) -> torch.Tensor:
+    """(L, B, H, S, D) -> (L, H, B*S, D): tokens as observations.
+
+    `permute(...).reshape(...)` cannot return a view here, so this materializes a copy.
+    Callers free the source tensor immediately afterwards.
+    """
+    return x.permute(0, 2, 1, 3, 4).reshape(x.shape[0], H, -1, D)
+
+
 @torch.no_grad()
-def capture_chunk(model_name, chunk_ids, cfg_rt, stride, want_rope: bool):
+def capture_chunk(model_name, chunk_ids, rt, stride, want_rope: bool):
     """Capture content-space (and optionally post-RoPE) KV for a chunk, then free the model.
 
-    Returns (k_content, v, k_rope|None), each (L, n_batches*B, H, S', D) in fp16.
-    Hooks move tensors to CPU as they fire, so GPU memory holds only the model and one
-    layer's activations regardless of chunk size.
+    Returns (k_content, v, k_rope|None), each (L, n_seqs, H, S', D) in fp16 on CPU.
     """
-    dtype = getattr(torch, cfg_rt["dtype"])
-    device = cfg_rt["device"]
-    model = load_model(model_name, dtype, device)
+    model = load_model(model_name, getattr(torch, rt["dtype"]), rt["device"])
     mc = model.config
     theta = float(mc.rope_parameters["rope_theta"])
     ks, vs, krs = [], [], []
     try:
         for b in chunk_ids:
-            b = b.to(device)
             with KVCapture(model, store_dtype=torch.float32) as cap:
-                model(input_ids=b, use_cache=False)
+                model(input_ids=b.to(rt["device"]), use_cache=False)
                 k, v = cap.stacked()          # (L,B,H,S,D) fp32, already on CPU
             if want_rope:
                 cos, sin = rope_tables_for(k.shape[3], mc.head_dim, theta, dtype=torch.float32)
@@ -92,172 +96,133 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default=str(ROOT / "configs/qwen3_0.6b_to_1.7b.yaml"))
     ap.add_argument("--n-seqs", type=int, default=None, help="override calibration size")
+    ap.add_argument("--device", default=None, help="override runtime.device")
     ap.add_argument("--out", default=str(ROOT / "results/probe_r2.pt"))
     args = ap.parse_args()
 
     cfg = yaml.safe_load(open(args.config))
-    cal, rt = cfg["calibration"], cfg["runtime"]
+    cal, rt, pr = cfg["calibration"], cfg["runtime"], cfg["probe"]
+    if args.device:
+        rt["device"] = args.device
+        if args.device == "cpu" and rt["dtype"] == "float16":
+            rt["dtype"] = "float32"          # fp16 matmuls are not supported on CPU
     n_seqs = args.n_seqs or cal["n_seqs"]
     stride, chunk = cal["stride"], rt["chunk"]
 
     from transformers import AutoConfig, AutoTokenizer
 
     tok = AutoTokenizer.from_pretrained(cfg["source"])
-    src_cfg = AutoConfig.from_pretrained(cfg["source"])
-    tgt_cfg = AutoConfig.from_pretrained(cfg["target"])
-    Ls, Lt = src_cfg.num_hidden_layers, tgt_cfg.num_hidden_layers
-    H, D = src_cfg.num_key_value_heads, src_cfg.head_dim
-    assert (tgt_cfg.num_key_value_heads, tgt_cfg.head_dim) == (H, D), (
-        "not a matched-KV pair: "
-        f"src {H}x{D} vs tgt {tgt_cfg.num_key_value_heads}x{tgt_cfg.head_dim}"
+    scfg = AutoConfig.from_pretrained(cfg["source"])
+    tcfg = AutoConfig.from_pretrained(cfg["target"])
+    Ls, Lt = scfg.num_hidden_layers, tcfg.num_hidden_layers
+    H, D = scfg.num_key_value_heads, scfg.head_dim
+    assert (tcfg.num_key_value_heads, tcfg.head_dim) == (H, D), (
+        f"not a matched-KV pair: src {H}x{D} vs "
+        f"tgt {tcfg.num_key_value_heads}x{tcfg.head_dim}"
     )
-    print(f"src {cfg['source']}: {Ls} layers | tgt {cfg['target']}: {Lt} layers | {H} kv heads x {D}")
+    print(f"src {cfg['source']}: {Ls} layers | tgt {cfg['target']}: {Lt} layers "
+          f"| {H} kv heads x {D}")
+    print(f"device={rt['device']} dtype={rt['dtype']} chunk={chunk} stride={stride}")
 
-    print(f"loading {n_seqs} x {cal['seq_len']} FineWeb-Edu sequences ...")
     ids = cached_calibration(
         tok, n_seqs, cal["seq_len"], cal["seed"],
         ROOT / f"results/calib_{n_seqs}x{cal['seq_len']}_s{cal['seed']}.pt",
     )
-    print(f"  calibration tensor: {tuple(ids.shape)}")
+    print(f"calibration: {tuple(ids.shape)}")
 
-    # `probe.shards` splits the TARGET layers into groups. With float32 accumulators the
-    # whole grid already fits, so this is a safety valve rather than a necessity.
-    # Capture is NOT repeated per shard: the same captured chunk updates every shard's
-    # Grams before being freed, so each chunk costs exactly one load of each model.
-    shards = cfg["probe"]["shards"]
-    tgt_groups = [list(range(i, Lt, shards)) for i in range(shards)]
+    gdt = getattr(torch, pr.get("gram_dtype", "float32"))
+    rope_diag = pr.get("rope_diagonal_only", True)
 
-    r2 = {k: torch.zeros(Ls, Lt, H) for k in ("k_content", "k_rope", "v")}
-    n_obs = 0
-    t0 = time.time()
-
-    rope_diag = cfg["probe"].get("rope_diagonal_only", True)
-    # float32 accumulators halve the working set. `solve` promotes to float64 before the
-    # cancellation-prone centering step, and at this scale the R^2 difference measured
-    # under 1e-6 -- immaterial for a diagnostic, and it keeps the machine off swap.
-    gdt = getattr(torch, cfg["probe"].get("gram_dtype", "float32"))
-    all_grams = []
-    for tgt_layers in tgt_groups:
-        g = {kind: [[[GramAccumulator(D, D, dtype=gdt) for _ in range(H)] for _ in tgt_layers]
-                    for _ in range(Ls)]
-             for kind in ("k_content", "v")}
-        # K_rope exists to answer one question -- does stripping RoPE help? -- so when
-        # `rope_diagonal_only` it is fitted only where src layer == tgt layer.
-        g["k_rope"] = (
-            {lt: [GramAccumulator(D, D, dtype=gdt) for _ in range(H)] for lt in tgt_layers}
-            if rope_diag
-            else [[[GramAccumulator(D, D, dtype=gdt) for _ in range(H)] for _ in tgt_layers]
-                  for _ in range(Ls)]
-        )
-        all_grams.append(g)
+    grid_k = BatchedGrid(Ls, Lt, H, D, dtype=gdt)
+    grid_v = BatchedGrid(Ls, Lt, H, D, dtype=gdt)
+    grid_kr = (
+        DiagonalGrid(min(Ls, Lt), H, D, dtype=gdt) if rope_diag
+        else BatchedGrid(Ls, Lt, H, D, dtype=gdt)
+    )
+    nbytes = sum(
+        t.numel() * t.element_size()
+        for g in (grid_k, grid_v, grid_kr)
+        for t in vars(g).values() if isinstance(t, torch.Tensor)
+    )
+    print(f"statistics: {nbytes/1e9:.2f} GB in contiguous tensors")
 
     n_chunks = (ids.shape[0] + chunk - 1) // chunk
+    t0 = time.time()
     for ci, c0 in enumerate(range(0, ids.shape[0], chunk)):
         chunk_ids = list(batches(ids[c0 : c0 + chunk], rt["batch_size"]))
+
         sk, sv, skr = capture_chunk(cfg["source"], chunk_ids, rt, stride, want_rope=True)
         tk, tv, tkr = capture_chunk(cfg["target"], chunk_ids, rt, stride, want_rope=True)
 
-        # permute(...).reshape(...) cannot return a view, so each of these six tensors
-        # is a full copy. Converting all six at once doubled peak memory and pushed an
-        # already-tight machine into swap, so each source tensor is converted, consumed
-        # and freed in turn instead.
-        def per_head(x):
-            return x.permute(0, 2, 1, 3, 4).reshape(x.shape[0], H, -1, D)
+        # Convert, consume and free one pair at a time: holding all six views at once
+        # doubled peak memory for no benefit.
+        TK = per_head(tk, H, D); free(tk)
+        SK = per_head(sk, H, D); free(sk)
+        grid_k.update(SK, TK)
+        free(SK, TK)
 
-        TK, TV = per_head(tk), per_head(tv)
-        free(tk, tv)
-        TKR = per_head(tkr) if rope_diag else None
-        free(tkr)
-
-        # One source tensor in memory at a time; every shard consumes it before it goes.
-        SK = per_head(sk); free(sk)
-        for grams, tgt_layers in zip(all_grams, tgt_groups):
-            for ls in range(Ls):
-                for j, lt in enumerate(tgt_layers):
-                    for h in range(H):
-                        grams["k_content"][ls][j][h].update(SK[ls, h], TK[lt, h])
-        free(SK)
-
-        SV = per_head(sv); free(sv)
-        for grams, tgt_layers in zip(all_grams, tgt_groups):
-            for ls in range(Ls):
-                for j, lt in enumerate(tgt_layers):
-                    for h in range(H):
-                        grams["v"][ls][j][h].update(SV[ls, h], TV[lt, h])
+        TV = per_head(tv, H, D); free(tv)
+        SV = per_head(sv, H, D); free(sv)
+        grid_v.update(SV, TV)
         free(SV, TV)
 
-        SKR = per_head(skr); free(skr)
-        for grams, tgt_layers in zip(all_grams, tgt_groups):
-            if rope_diag:
-                for lt in tgt_layers:
-                    if lt < Ls:                      # layer-aligned diagonal
-                        for h in range(H):
-                            grams["k_rope"][lt][h].update(SKR[lt, h], TKR[lt, h])
-            else:
-                for ls in range(Ls):
-                    for j, lt in enumerate(tgt_layers):
-                        for h in range(H):
-                            grams["k_rope"][ls][j][h].update(SKR[ls, h], TKR[lt, h])
+        TKR = per_head(tkr, H, D); free(tkr)
+        SKR = per_head(skr, H, D); free(skr)
+        if rope_diag:
+            L = min(Ls, Lt)
+            grid_kr.update(SKR[:L], TKR[:L])
+        else:
+            grid_kr.update(SKR, TKR)
         free(SKR, TKR)
 
-        n_obs = all_grams[0]["k_content"][0][0][0].n
         el = time.time() - t0
         eta = el / (ci + 1) * (n_chunks - ci - 1)
         print(f"  chunk {ci+1}/{n_chunks}: {min(c0+chunk, ids.shape[0])}/{ids.shape[0]} seqs, "
-              f"n={n_obs} obs, {el/60:.1f}m elapsed, ~{eta/60:.0f}m left", flush=True)
+              f"n={grid_k.n} obs/head, {el/60:.1f}m elapsed, ~{eta/60:.0f}m left", flush=True)
 
     print("\nsolving ...", flush=True)
-    r2["k_rope"].fill_(float("nan"))     # cells never fitted stay NaN, not 0
-    for grams, tgt_layers in zip(all_grams, tgt_groups):
-        for kind in ("k_content", "v"):
-            for ls in range(Ls):
-                for j, lt in enumerate(tgt_layers):
-                    for h in range(H):
-                        r2[kind][ls, lt, h] = solve(grams[kind][ls][j][h], lam=0.01).r2
-        if rope_diag:
-            for lt in tgt_layers:
-                if lt < Ls:
-                    for h in range(H):
-                        r2["k_rope"][lt, lt, h] = solve(grams["k_rope"][lt][h], lam=0.01).r2
-        else:
-            for ls in range(Ls):
-                for j, lt in enumerate(tgt_layers):
-                    for h in range(H):
-                        r2["k_rope"][ls, lt, h] = solve(grams["k_rope"][ls][j][h], lam=0.01).r2
-    free(all_grams)
+    lams = cfg["fit"]["lambdas"]
+    lam = lams[len(lams) // 2] if lams else 0.01
+    r2 = {
+        "k_content": grid_k.solve_r2(lam),      # (Ls, Lt, H)
+        "v": grid_v.solve_r2(lam),
+    }
+    if rope_diag:
+        diag = grid_kr.solve_r2(lam)            # (L, H)
+        full = torch.full((Ls, Lt, H), float("nan"))
+        for l in range(diag.shape[0]):
+            full[l, l] = diag[l]
+        r2["k_rope"] = full
+    else:
+        r2["k_rope"] = grid_kr.solve_r2(lam)
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     torch.save({
-        "r2": r2, "n_obs": n_obs, "n_seqs": n_seqs,
+        "r2": r2, "n_obs": grid_k.n, "n_seqs": n_seqs, "lam": lam,
         "source": cfg["source"], "target": cfg["target"],
         "Ls": Ls, "Lt": Lt, "H": H, "D": D,
     }, out)
+    print(f"saved -> {out}  ({(time.time()-t0)/60:.1f} min)")
 
-    print(f"\nsaved -> {out}  ({(time.time()-t0)/60:.1f} min total)")
     print("\n=== Stage A: single-source linear structure ===")
-    print(f"observations per head: {n_obs}")
+    print(f"observations per head: {grid_k.n}")
     for kind in ("k_content", "k_rope", "v"):
-        m = r2[kind].mean(-1)            # head-averaged (Ls, Lt)
-        diag = m.diagonal()
-        if torch.isnan(m).all():
-            continue
+        m = r2[kind].mean(-1)
         finite = m[~torch.isnan(m)]
-        best = finite.max().item()
-        if not torch.isnan(m).any():
-            bi = torch.unravel_index(m.argmax(), m.shape)
-            where = f"(src {bi[0].item()} -> tgt {bi[1].item()})"
-        else:
-            where = "(diagonal only)"
-        print(f"  {kind:10s}: best R^2 = {best:.3f} {where}, "
-              f"layer-aligned mean = {diag[~torch.isnan(diag)].mean():.3f}")
+        if finite.numel() == 0:
+            continue
+        diag = m.diagonal()
+        diag = diag[~torch.isnan(diag)]
+        print(f"  {kind:10s}: best {float(finite.max()):.3f}   "
+              f"layer-aligned mean {float(diag.mean()):.3f}")
 
     kc, kr = r2["k_content"].mean(-1).diagonal(), r2["k_rope"].mean(-1).diagonal()
     mask = ~(torch.isnan(kc) | torch.isnan(kr))
     if mask.any():
-        print(f"\n  RoPE stripping effect (layer-aligned): "
-              f"K_content {kc[mask].mean():.3f} vs K_rope {kr[mask].mean():.3f}")
-    print(f"\n  paper reference (Qwen3 14B->32B): best single-source K_stripped R^2 = 0.81")
+        print(f"  RoPE stripping: K_content {float(kc[mask].mean()):.3f} "
+              f"vs K_rope {float(kr[mask].mean()):.3f}")
+    print("\n  paper reference (Qwen3 14B->32B): best single-source K R^2 = 0.81")
 
 
 if __name__ == "__main__":
