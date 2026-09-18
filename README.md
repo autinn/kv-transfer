@@ -4,7 +4,8 @@ A replication of **"Cross-Model KV Cache Transfer in LLM Families: A Closed-Form
 Mapping for Prefill Reuse"** ([arXiv 2608.03893](https://arxiv.org/html/2608.03893v1),
 Heo et al., NVIDIA), tested one scale below anything the paper reports.
 
-See **[REPORT.md](REPORT.md)** for what was measured and what remains.
+**[REPORT.md](REPORT.md)** — what was measured and verified.
+**[NEXT_STEPS.md](NEXT_STEPS.md)** — what to run on a rented GPU, and which GPU to rent.
 
 ---
 
