@@ -21,10 +21,16 @@ Required: **≥8 GB VRAM** and **≥16 GB host RAM**. The measured requirements:
 
 | | VRAM peak | host RAM |
 |---|---|---|
-| Qwen3-1.7B resident + activations | ~4.5 GB | — |
+| Qwen3-1.7B weights + activations (measured, REPORT.md §5) | ~3.4 GB | — |
 | statistics (full 28×28×8 grid, fp32) | — | 0.88 GB |
-| captured KV at `chunk=20` | — | ~1.8 GB |
-| **total** | **~4.5 GB** | **~3.5 GB** |
+| captured KV at the shipped `chunk: 5` (`configs/qwen3_0.6b_to_1.7b.yaml`) | — | ~0.9 GB |
+| **total** | **~3.4 GB** | **~1.8 GB** |
+
+Host RAM is not additive with VRAM — the model lives on the GPU, the statistics and
+captured KV live on the host — and the config's own comment
+(`configs/qwen3_0.6b_to_1.7b.yaml:14-16`) notes peak RSS is `max(...)` across stages,
+not a sum, so these are conservative upper bounds. Raising `runtime.chunk` in the config
+trades host RAM for fewer model reloads; the shipped default favors low memory.
 
 So even a 16 GB card is roomy. Recommendations in order of value:
 
@@ -46,7 +52,7 @@ variable hosts. Any of them will do — you need the box for under an hour.
 
 | Run | GPU time | Cost |
 |---|---|---|
-| Full pipeline, n=500 (paper-faithful) | ~50 min | **~$0.50–1.00** |
+| Full pipeline, n=500 (paper-faithful) | ~30–40 min (see README "Expected runtime") | **~$0.30–0.70** |
 | Plus setup and model downloads | ~15 min | included |
 | Optional: add the 1.7B→4B pair | +40 min | +~$0.50 |
 
@@ -63,9 +69,9 @@ git clone <this repo> && cd kv-transfer
 curl -LsSf https://astral.sh/uv/install.sh | sh    # or use the system python
 uv venv --python 3.12 && uv pip install -e ".[dev]"
 
-export HF_HUB_DISABLE_XET=1        # keeps a second copy of every blob otherwise
-export HF_HUB_DISABLE_TELEMETRY=1
-export TOKENIZERS_PARALLELISM=false
+source .env.sh                     # HF_HUB_DISABLE_XET etc. — see .env.sh for the
+                                    # up-to-date list; do not hardcode it here
+export TOKENIZERS_PARALLELISM=false  # silences a tokenizer fork warning under multiprocessing
 ```
 
 Then, before anything else:
@@ -114,7 +120,7 @@ python scripts/04_report_probe.py results/probe_n500.pt | tee results/probe_repo
 
 Produces the 28×28 R² grid for keys (content space), values, and the layer-aligned
 post-RoPE comparison. **This is the paper's central evidence and the input to everything
-else.** ~50 min at n=500, ~10 min at n=100.
+else.** ~30–40 min at n=500, ~10 min at n=100 (see README "Expected runtime").
 
 ### Priority 2 — production fits and the k-sweep
 

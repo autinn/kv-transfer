@@ -84,7 +84,13 @@ def main():
     L, H, D = tcfg.num_hidden_layers, tcfg.num_key_value_heads, tcfg.head_dim
     theta = float(tcfg.rope_parameters["rope_theta"])
 
-    ids = wikitext2(tok, n_seqs=n_seqs, seq_len=ev.get("seq_len", 1024))
+    # seq_len must leave room for a real continuation after the prefix, so it tracks
+    # prefix_len rather than a fixed config default. A --prefix-len override (e.g. the
+    # 4096-token length-generalization check) would otherwise silently score zero
+    # continuation tokens against the config's fixed 1024-token sequences.
+    min_continuation = ev.get("min_continuation", 256)
+    seq_len = max(ev.get("seq_len", 1024), prefix_len + min_continuation)
+    ids = wikitext2(tok, n_seqs=n_seqs, seq_len=seq_len)
     print(f"eval: {tuple(ids.shape)}, prefix_len={prefix_len}")
 
     print("prefilling prefixes with the source model ...")
