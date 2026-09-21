@@ -32,8 +32,14 @@ def standalone_ppl(model, ids: torch.Tensor, prefix_len: int, device="cpu") -> f
     total, n = 0.0, 0
     for seq in ids:
         seq = seq.unsqueeze(0).to(device)
-        logits = model(input_ids=seq).logits[:, prefix_len - 1 : -1]
-        s, c = _nll(logits, seq[:, prefix_len:])
+        # Cache replay receives the first continuation token as input, so its logits
+        # begin by predicting the second continuation token. Score that same range
+        # here so standalone, oracle, and transfer PPL use identical targets.
+        logits = model(input_ids=seq).logits[:, prefix_len : -1]
+        targets = seq[:, prefix_len + 1 :]
+        if targets.numel() == 0:
+            continue
+        s, c = _nll(logits, targets)
         total += s
         n += c
     return float(torch.exp(torch.tensor(total / n)))
@@ -68,10 +74,15 @@ def transfer_ppl(
     total, n = 0.0, 0
     for seq, (sk, sv) in zip(ids, src_caches):
         seq = seq.unsqueeze(0)
-        cache = mapper.to_cache(sk, sv, offset=0, device=device)
+        cache = mapper.to_cache(sk, sv, offset=0, dtype=tgt_model.dtype, device=device, config=tgt_model.config)
         rest = seq[:, prefix_len:].to(device)
+        if rest.numel() == 0:
+            continue
         logits = logits_from_cache(tgt_model, cache, rest, prefix_len=prefix_len)
-        s, c = _nll(logits, rest)
+        # The continuation is scored on the next-token predictions conditioned on the
+        # prefix and each preceding continuation token; the model emits one logit for
+        # each input token, but the target for token j is the next token, i.e. rest[:,1:].
+        s, c = _nll(logits[:, :-1], rest[:, 1:])
         total += s
         n += c
         del cache
@@ -95,10 +106,12 @@ def oracle_ppl(tgt_model, ids: torch.Tensor, prefix_len: int, n_layers: int, dev
             tgt_model(input_ids=seq[:, :prefix_len].to(device), use_cache=False)
             k = [cap.keys[l] for l in range(n_layers)]
             v = [cap.values[l] for l in range(n_layers)]
-        cache = build_cache(k, v, cfg.head_dim, theta, device=device)
+        cache = build_cache(k, v, cfg.head_dim, theta, dtype=tgt_model.dtype, device=device, config=tgt_model.config)
         rest = seq[:, prefix_len:].to(device)
+        if rest.numel() == 0:
+            continue
         logits = logits_from_cache(tgt_model, cache, rest, prefix_len=prefix_len)
-        s, c = _nll(logits, rest)
+        s, c = _nll(logits[:, :-1], rest[:, 1:])
         total += s
         n += c
         del cache

@@ -80,12 +80,12 @@ class KVMapper:
         return out_k, out_v
 
     @torch.no_grad()
-    def to_cache(self, src_k, src_v, offset: int = 0, dtype=None, device=None):
+    def to_cache(self, src_k, src_v, offset: int = 0, dtype=None, device=None, config=None):
         """Map source KV and build a target-model cache (applies the target's RoPE)."""
         k, v = self.map_content(src_k, src_v)
         return build_cache(
             k, v, self.head_dim, self.rope_theta_target,
-            offset=offset, dtype=dtype, device=device,
+            offset=offset, dtype=dtype, device=device, config=config,
         )
 
     def mean_r2(self, kind: str = "K") -> float:

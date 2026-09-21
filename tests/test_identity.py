@@ -115,6 +115,22 @@ def test_grafted_cache_reproduces_standalone_logits(loaded):
     )
 
 
+def test_oracle_ppl_matches_standalone_ppl(loaded):
+    """The oracle path must reproduce the same teacher-forced continuation loss as a full forward."""
+    from kvtransfer.eval.ppl import oracle_ppl, standalone_ppl
+
+    tok, model = loaded
+    ids = tok(TEXT, return_tensors="pt").input_ids[:, :64]
+    prefix_len = 24
+
+    standalone = standalone_ppl(model, ids, prefix_len, device="cpu")
+    oracle = oracle_ppl(model, ids, prefix_len, model.config.num_hidden_layers, device="cpu")
+
+    assert torch.isclose(torch.tensor(standalone), torch.tensor(oracle), rtol=1e-3, atol=1e-3), (
+        f"oracle PPL {oracle:.4f} deviates from standalone {standalone:.4f}"
+    )
+
+
 def test_identity_ridge_recovers_identity_mapping(loaded):
     """Fit a mapper from the model to ITSELF: W must come out as identity, R^2 == 1.
 

@@ -25,6 +25,7 @@ def build_cache(
     offset: int = 0,
     dtype: torch.dtype | None = None,
     device=None,
+    config=None,
 ) -> DynamicCache:
     """Build a DynamicCache from content-space keys and values.
 
@@ -38,7 +39,7 @@ def build_cache(
         S, head_dim, rope_theta, device=keys_content[0].device,
         dtype=torch.float32, offset=offset,
     )
-    cache = DynamicCache(config=None) if _accepts_config() else DynamicCache()
+    cache = DynamicCache(config=config) if config is not None else (DynamicCache(config=None) if _accepts_config() else DynamicCache())
     for l, (k, v) in enumerate(zip(keys_content, values)):
         k_rot = apply_rope(k.to(torch.float32), cos, sin)
         if dtype is not None:
@@ -80,17 +81,15 @@ def cache_to_content(cache, head_dim: int, rope_theta: float, offset: int = 0):
 def logits_from_cache(model, cache, next_token_ids: torch.Tensor, prefix_len: int):
     """Run `next_token_ids` against a pre-populated cache.
 
-    Position ids continue from `prefix_len`, which is what makes the grafted prefix
-    look like a genuine prefill to the target model.
+    The canonical HF cache contract is to pass only the continuation tokens together
+    with the prefilled `past_key_values`; the model itself infers the correct positions
+    and causal attention from the cache. Overriding `position_ids` / `attention_mask`
+    here can silently break the prefix ordering, which is exactly the kind of bug the
+    oracle-graft sanity check is meant to catch.
     """
-    B, S = next_token_ids.shape
-    pos = torch.arange(prefix_len, prefix_len + S, device=next_token_ids.device).unsqueeze(0).expand(B, -1)
-    attn = torch.ones(B, prefix_len + S, dtype=torch.long, device=next_token_ids.device)
     out = model(
         input_ids=next_token_ids,
         past_key_values=cache,
-        position_ids=pos,
-        attention_mask=attn,
         use_cache=True,
     )
     return out.logits

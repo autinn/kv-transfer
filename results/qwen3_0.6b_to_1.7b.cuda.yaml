@@ -1,0 +1,36 @@
+calibration:
+  dataset: fineweb-edu
+  n_seqs: 500
+  seed: 0
+  seq_len: 1024
+  stride: 4
+eval:
+  prefix_len: 512
+  wikitext_seqs: 64
+fit:
+  k_sweep:
+  - 1
+  - 2
+  - 4
+  - 6
+  - 8
+  - 12
+  - 16
+  - 20
+  - 24
+  - 28
+  lambdas:
+  - 0.001
+  - 0.01
+  - 0.1
+probe:
+  gram_dtype: float32
+  rope_diagonal_only: true
+  shards: 4
+runtime:
+  batch_size: 1
+  chunk: 5
+  device: cuda
+  dtype: float16
+source: Qwen/Qwen3-0.6B
+target: Qwen/Qwen3-1.7B

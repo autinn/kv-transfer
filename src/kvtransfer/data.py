@@ -80,8 +80,24 @@ def wikitext2(tokenizer, n_seqs: int = 64, seq_len: int = 1024) -> torch.Tensor:
     """
     from datasets import load_dataset
 
-    ds = load_dataset("wikitext", "wikitext-2-raw-v1", split="test")
-    text = "\n\n".join(t for t in ds["text"] if t.strip())
+    ds = None
+    last_err = None
+    for repo, config in [
+        ("Salesforce/wikitext", "wikitext-2-raw-v1"),
+        ("wikitext", "wikitext-2-raw-v1"),
+    ]:
+        try:
+            ds = load_dataset(repo, config, split="test")
+            break
+        except Exception as e:  # pragma: no cover - compatibility shim for HF versions
+            last_err = e
+    if ds is None:
+        raise last_err
+
+    texts = ds["text"] if "text" in ds.column_names else ds[0].keys()
+    text = "\n\n".join(str(t) for t in texts if str(t).strip())
+    if not text:
+        raise RuntimeError("WikiText test split is empty")
     ids = tokenizer(text, add_special_tokens=False).input_ids
     return _pack([ids], seq_len, n_seqs)
 
