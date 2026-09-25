@@ -244,10 +244,14 @@ def main():
                 row.append(f"{'-':>15s}")
                 continue
             ret = 100 * r[et.metric] / b[et.metric]
+            # Stored in the task entry, not as a top-level key: every top-level key
+            # is read back as a configuration on resume.
+            r["retention_pct"] = ret
             rets.append(ret)
             row.append(f"{ret:15.1f}")
         avg = f"{sum(rets)/len(rets):8.1f}" if rets else f"{'-':>8s}"
         print(f"  {conf:24s}" + "".join(row) + avg)
+    save_results()
     print(f"\nsaved -> {out_path}")
 
 

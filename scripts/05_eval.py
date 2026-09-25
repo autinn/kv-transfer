@@ -145,9 +145,13 @@ def main():
 
     base = results["target_standalone"]
     print("\n=== retention (log-ppl ratio vs target standalone) ===")
+    retention = {}
     for k, v in results.items():
         ret = math.log(base) / math.log(v) * 100 if v > 1 else float("nan")
+        retention[k] = ret
         print(f"  {k:18s} ppl {v:8.3f}   retention {ret:6.1f}%")
+    # Kept apart from the per-config perplexities so readers of those are unaffected.
+    results["retention_pct"] = retention
 
     out = Path(args.out) if args.out else out_root / "eval_ppl.json"
     out.parent.mkdir(parents=True, exist_ok=True)

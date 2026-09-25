@@ -1,0 +1,45 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+hellaswag: 10042 docs, 10019 unique contexts, 494515 context tokens (11s)
+1 round(s), <= 871930 prefix tokens (~100 GB of source KV) each
+
+=== round 1/1: hellaswag[0..10018] ===
+  reusing KV store /home/ubuntu/kv-transfer/results/kv/Qwen__Qwen3-0.6B/task_hellaswag_10042_0-10018 (10019 items)
+loading Qwen/Qwen3-1.7B (float16, cuda) ...
+Loading weights:   0%|          | 0/311 [00:00<?, ?it/s]Loading weights:   1%|          | 2/311 [00:00<00:23, 12.95it/s]Loading weights:  40%|████      | 125/311 [00:00<00:00, 592.71it/s]Loading weights:  72%|███████▏  | 224/311 [00:00<00:00, 751.59it/s]Loading weights: 100%|██████████| 311/311 [00:00<00:00, 701.84it/s]
+  mapper_k1_lam0.01        hellaswag      10019 contexts ...
+      1000/10019 contexts
+      2000/10019 contexts
+      3000/10019 contexts
+      4000/10019 contexts
+      5000/10019 contexts
+      6000/10019 contexts
+      7000/10019 contexts
+      8000/10019 contexts
+      9000/10019 contexts
+      10000/10019 contexts
+  mapper_k1_lam0.01        hellaswag      acc_norm = 0.4899
+    (594s)
+  mapper_k8_lam0.01        hellaswag      10019 contexts ...
+      1000/10019 contexts
+      2000/10019 contexts
+      3000/10019 contexts
+      4000/10019 contexts
+      5000/10019 contexts
+      6000/10019 contexts
+      7000/10019 contexts
+      8000/10019 contexts
+      9000/10019 contexts
+      10000/10019 contexts
+  mapper_k8_lam0.01        hellaswag      acc_norm = 0.5369
+    (669s)
+
+=== retention vs standalone (%) ===
+  config                        hellaswag     avg
+  standalone                        100.0   100.0
+  oracle                             99.9    99.9
+  zero_copy                          55.8    55.8
+  mean_pred                             -       -
+  mapper_k1_lam0.01                  81.2    81.2
+  mapper_k8_lam0.01                  89.0    89.0
+
+saved -> /home/ubuntu/kv-transfer/results/eval_tasks.json

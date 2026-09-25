@@ -81,7 +81,7 @@ class BatchedGrid:
         # Penalty scaled by mean feature variance so lambda means the same thing at
         # every layer regardless of activation scale.
         scale = torch.diagonal(cxx, dim1=-2, dim2=-1).mean(-1) / n   # (Ls,H)
-        eye = torch.eye(D, dtype=f64)
+        eye = torch.eye(D, dtype=f64, device=cxx.device)
         A = cxx + (lam * scale.clamp_min(1e-12) * n + jitter)[..., None, None] * eye
 
         L = torch.linalg.cholesky(A)                    # (Ls,H,D,D)
@@ -142,7 +142,7 @@ class DiagonalGrid:
         syy_c = self.syy.to(f64) - n * my * my
 
         scale = torch.diagonal(cxx, dim1=-2, dim2=-1).mean(-1) / n
-        eye = torch.eye(D, dtype=f64)
+        eye = torch.eye(D, dtype=f64, device=cxx.device)
         A = cxx + (lam * scale.clamp_min(1e-12) * n + jitter)[..., None, None] * eye
         W = torch.cholesky_solve(cxy, torch.linalg.cholesky(A))
 

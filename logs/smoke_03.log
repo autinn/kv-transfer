@@ -1,0 +1,27 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+calibration (16, 512)  | 28 -> 28 layers, 8x128
+  reusing KV store /home/ubuntu/kv-transfer/results/kv/Qwen__Qwen3-0.6B/calib_16x512_s0_st4 (16 items)
+  reusing KV store /home/ubuntu/kv-transfer/results/kv/Qwen__Qwen3-1.7B/calib_16x512_s0_st4 (16 items)
+
+=== fitting k1 ===
+  sources per target layer: [1]
+  1 target-layer group(s) under 2 GB
+  group 1/1 (target layers 0-27) 0.0m
+  lam=0.01: mean R^2  K=0.582  V=0.471  -> mapper_k1_lam0.01.pt
+
+=== fitting k4 ===
+  sources per target layer: [4]
+  1 target-layer group(s) under 2 GB
+  K and V select different source layers in 24/28 target layers
+  group 1/1 (target layers 0-27) 0.0m
+  lam=0.01: mean R^2  K=0.731  V=0.655  -> mapper_k4_lam0.01.pt
+
+=== fitting identity ===
+  sources per target layer: [1]
+  1 target-layer group(s) under 2 GB
+  group 1/1 (target layers 0-27) 0.0m
+  lam=0.01: mean R^2  K=0.582  V=0.471  -> mapper_identity_lam0.01.pt
+
+real	0m10.595s
+user	2m47.760s
+sys	0m4.362s

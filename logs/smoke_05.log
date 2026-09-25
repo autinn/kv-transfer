@@ -1,0 +1,37 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Generating test split:   0%|          | 0/4358 [00:00<?, ? examples/s]Generating test split: 100%|██████████| 4358/4358 [00:00<00:00, 394747.37 examples/s]
+Generating train split:   0%|          | 0/36718 [00:00<?, ? examples/s]Generating train split: 100%|██████████| 36718/36718 [00:00<00:00, 1063844.98 examples/s]
+Generating validation split:   0%|          | 0/3760 [00:00<?, ? examples/s]Generating validation split: 100%|██████████| 3760/3760 [00:00<00:00, 875900.20 examples/s]
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (298938 > 131072). Running this sequence through the model will result in indexing errors
+eval: (8, 512), prefix_len=256 | 28 -> 28 layers
+prefilling prefixes with the source model ...
+  capturing Qwen/Qwen3-0.6B -> /home/ubuntu/kv-transfer/results/kv/Qwen__Qwen3-0.6B/ppl_8x512_p256: 2/2 shards, ~0.2 GB
+loading Qwen/Qwen3-0.6B (float16, cuda) ...
+Loading weights:   0%|          | 0/311 [00:00<?, ?it/s]Loading weights:  21%|██        | 65/311 [00:00<00:00, 649.62it/s]Loading weights: 100%|██████████| 311/311 [00:00<00:00, 1742.24it/s]
+    shard 1/2  0.0m elapsed, ~0m left
+    shard 2/2  0.0m elapsed, ~0m left
+loading target model ...
+loading Qwen/Qwen3-1.7B (float16, cuda) ...
+Loading weights:   0%|          | 0/311 [00:00<?, ?it/s]Loading weights:   0%|          | 1/311 [00:00<00:37,  8.32it/s]Loading weights:  25%|██▌       | 78/311 [00:00<00:00, 420.63it/s]Loading weights:  58%|█████▊    | 180/311 [00:00<00:00, 680.79it/s]Loading weights:  90%|█████████ | 280/311 [00:00<00:00, 789.21it/s]Loading weights: 100%|██████████| 311/311 [00:00<00:00, 684.09it/s]
+  target standalone ppl = 18.153  (0s)
+  oracle graft      ppl = 18.154  (1s)
+  mapper_identity_lam0.01 ppl = 32.099  (1s)
+  mapper_k1_lam0.01  ppl = 32.099  (1s)
+  mapper_k4_lam0.01  ppl = 25.280  (1s)
+  zero_copy          ppl = 72.663  (1s)
+  mean_pred          ppl = 13507.581  (0s)
+
+=== retention (log-ppl ratio vs target standalone) ===
+  target_standalone  ppl   18.153   retention  100.0%
+  oracle_graft       ppl   18.154   retention  100.0%
+  mapper_identity_lam0.01 ppl   32.099   retention   83.6%
+  mapper_k1_lam0.01  ppl   32.099   retention   83.6%
+  mapper_k4_lam0.01  ppl   25.280   retention   89.7%
+  zero_copy          ppl   72.663   retention   67.6%
+  mean_pred          ppl 13507.581   retention   30.5%
+
+saved -> /home/ubuntu/kv-transfer/results/smoke_0.6b_to_1.7b/eval_ppl.json
+
+real	0m13.090s
+user	0m38.128s
+sys	0m4.690s

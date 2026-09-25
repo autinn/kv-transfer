@@ -1,0 +1,43 @@
+# Smoke run of the real pair on one A10: same counts as configs/smoke_0.6b_to_1.7b.yaml
+# (16 calibration seqs, 50 ARC-C + 50 WinoGrande), but models, Grams and solves on cuda.
+# The numbers are not results. See GPU.md.
+source: Qwen/Qwen3-0.6B
+target: Qwen/Qwen3-1.7B
+output_dir: results/smoke_0.6b_to_1.7b
+calibration:
+  dataset: fineweb-edu
+  n_seqs: 16
+  seq_len: 512
+  stride: 4
+  seed: 0
+runtime:
+  chunk: 4
+  batch_size: 16
+  dtype: float16
+  device: cuda
+  store_dir: results/kv
+  store_dtype: float16
+probe:
+  gram_dtype: float32
+  rope_diagonal_only: true
+  gram_device: cuda
+fit:
+  lambdas:
+  - 0.01
+  k_sweep:
+  - 1
+  - 4
+  max_gram_gb: 12
+  gram_device: cuda
+eval:
+  wikitext_seqs: 8
+  seq_len: 512
+  prefix_len: 256
+  store_budget_gb: 2
+  tasks:
+    arc_challenge:
+      num_fewshot: 0
+      limit: 50
+    winogrande:
+      num_fewshot: 0
+      limit: 50

@@ -1,0 +1,53 @@
+# Qwen3 0.6B -> 1.7B on one NVIDIA A10 (23 GB VRAM, 222 GB RAM, 1.3 TB disk).
+# Same pair, calibration and dtypes as configs/qwen3_0.6b_to_1.7b.yaml (sized for an
+# 8 GB M1), so KV stores and output_dir are shared with it. Store fingerprints cover
+# model, token ids, stride and store_dtype, not chunk, so an existing store is reused.
+# Memory figures are measured on the A10; see GPU.md.
+source: Qwen/Qwen3-0.6B
+target: Qwen/Qwen3-1.7B
+output_dir: results
+
+calibration:
+  dataset: fineweb-edu
+  n_seqs: 500          # paper: 500 sequences
+  seq_len: 1024        # paper: 1024 tokens
+  stride: 4            # paper: stride-4 token subsampling
+  seed: 0
+
+runtime:
+  device: cuda
+  dtype: float16       # keep: stores are fingerprinted on store_dtype only, so switching
+                       # to bf16 would silently reuse fp16-computed KV
+  store_dtype: float16
+  batch_size: 16       # 1.7B capture peak 8.5 GB (batch 8: 6.0 GB)
+  chunk: 40            # sequences per shard; probe/fit move a whole shard (~2.3 GB) to GPU
+  store_dir: results/kv
+
+probe:
+  rope_diagonal_only: true
+  gram_dtype: float32  # solve() promotes to float64
+  gram_device: cuda    # needs the torch.eye device fix in batched_gram.py (GPU.md)
+
+fit:
+  lambdas: [0.001, 0.01, 0.1]
+  k_sweep: [1, 2, 4, 8, 12, 16]
+  gram_device: cuda
+  # fp64 Grams: k=12 9.2 GB, k=16 16.0 GB. Measured non-Gram overhead ~4.4 GB plus a
+  # ~2.3 GB shard, so 12 runs k<=12 in one pass and k=16 in two. 16 would put k=16 in one
+  # ~22.7 GB pass against 22.6 GB free.
+  max_gram_gb: 12
+
+eval:
+  wikitext_seqs: 64
+  prefix_len: 512
+  store_budget_gb: 100          # source KV per benchmark round (0.6B: ~115 KB/token)
+  # The paper's five benchmarks, same settings as configs/qwen3_14b_to_32b.yaml.
+  # Without this, 07_eval_tasks.py runs only ARC-Challenge + WinoGrande.
+  # 07 scores EVERY mapper in results/mappers/ (6 k x 3 lambda + identity x 3 + 4
+  # baselines ~ 25 configs) unless given --only; see GPU.md for runtime.
+  tasks:
+    arc_challenge: {num_fewshot: 0}
+    hellaswag: {num_fewshot: 0}
+    winogrande: {num_fewshot: 0}
+    mmlu: {num_fewshot: 0}
+    gsm8k: {num_fewshot: 5, max_new_tokens: 256}
