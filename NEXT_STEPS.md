@@ -233,3 +233,41 @@ reporting can be re-derived from it without re-running the models.
   recover lost output is the expensive mistake.
 - Model downloads are ~5 GB and take a few minutes; that time is billed, so do not
   restart the box unnecessarily.
+
+---
+
+## Validating against the paper: Qwen3-14B → Qwen3-32B
+
+The paper reports detailed numbers for this pair, so running it checks the
+implementation directly. `configs/qwen3_14b_to_32b.yaml` is set up for it.
+
+**Hardware: one 80 GB GPU** (H100 or A100-80GB). Qwen3-32B in bf16 is ~64 GB; the two
+models are never resident together. The L4 above is too small. Disk: ~55 GB for the
+calibration KV stores plus `eval.store_budget_gb` (60 GB) for benchmark rounds. Put
+`runtime.store_dir` on the instance's largest volume.
+
+```bash
+CONFIG=configs/qwen3_14b_to_32b.yaml bash scripts/run_all.sh
+```
+
+**Cheap check (stages 1–3, no benchmarks)**: compare the probe and fit output to the
+paper's reported R² for this pair:
+
+| | paper |
+|---|---|
+| best single-source key R² (best cell) | 0.81 |
+| k = 1 mean R², keys / values | 0.56 / 0.32 |
+| k = 8 mean R², keys / values | 0.79 / 0.65 |
+| k = all mean R², keys / values | 0.85 / 0.76 |
+
+**Full check**: `07_eval_tasks.py` retention on the five benchmarks against the paper's
+97.6% average at k = 8 (HellaSwag 80.70 absolute at k = 8, 44.81 at k = 1).
+
+Two known differences from the paper to settle before comparing:
+
+1. **Features per target head.** This repo maps target head *h* from the same head *h*
+   in each selected source layer (k·128 inputs). The paper's quoted mapper sizes (3.36B
+   parameters for Llama 8B→70B at k = 20) match target heads reading *all 8* source
+   heads (k·8·128 inputs). Confirm in the paper's method section; if so, add that mode.
+2. **λ scaling.** `ridge.py` multiplies λ by the mean feature variance, so λ = 0.01 here
+   is not the paper's λ = 0.01.

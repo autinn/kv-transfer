@@ -5,14 +5,17 @@ content space and record R^2. This is the paper's central evidence -- if cross-m
 is linearly related, it shows up here -- and it is also the input to cross-layer source
 selection in Stage B.
 
-Memory discipline (developed on an 8 GB machine):
-  * the two models are never resident at once: capture from the source, free it, then
-    capture from the target
-  * activations live only for one chunk of sequences, in fp16, and each derived view is
-    freed as soon as it has been consumed
+Memory discipline (developed on an 8 GB machine, scaled to 14B -> 32B):
+  * each model's KV is captured once to a disk store (`kvtransfer.kvstore`), so each
+    model is loaded once and the two are never resident at once
+  * activations live only for one shard of sequences, and each derived view is freed
+    as soon as it has been consumed
   * statistics live in a few large contiguous tensors (see `batched_gram`) rather than
     one accumulator per cell -- the per-cell version needed 12,768 small allocations and
     fragmented the heap badly enough to force swapping
+
+Source and target may differ in depth. Layer-aligned numbers use proportional alignment
+(`select.identity_alignment`), which reduces to l -> l for equal depth.
 
 Output: results/probe_r2*.pt with R^2 of shape (n_src, n_tgt, n_heads) for K_content,
 K_rope (layer-aligned diagonal only by default) and V.
@@ -21,38 +24,18 @@ K_rope (layer-aligned diagonal only by default) and V.
 from __future__ import annotations
 
 import argparse
-import gc
 import time
 from pathlib import Path
 
 import torch
-import yaml
 
 from kvtransfer.batched_gram import BatchedGrid, DiagonalGrid
-from kvtransfer.capture import KVCapture
-from kvtransfer.data import batches, cached_calibration
-from kvtransfer.rope import apply_rope, rope_tables_for
-from kvtransfer.stream import subsample
+from kvtransfer.kvstore import rope_keys
+from kvtransfer.pipeline import calibration_ids, calibration_stores, load_config, paired_batches
+from kvtransfer.runtime import output_dir, pair_dims, resolve_runtime
+from kvtransfer.select import aligned_cells, identity_alignment
 
 ROOT = Path(__file__).resolve().parents[1]
-
-
-def load_model(name: str, dtype, device: str):
-    from transformers import AutoModelForCausalLM
-
-    m = AutoModelForCausalLM.from_pretrained(name, dtype=dtype)
-    if device != "cpu":
-        m = m.to(device)
-    m.eval()
-    return m
-
-
-def free(*objs):
-    for o in objs:
-        del o
-    gc.collect()
-    if torch.backends.mps.is_available():
-        torch.mps.empty_cache()
 
 
 def per_head(x: torch.Tensor, H: int, D: int) -> torch.Tensor:
@@ -64,123 +47,83 @@ def per_head(x: torch.Tensor, H: int, D: int) -> torch.Tensor:
     return x.permute(0, 2, 1, 3, 4).reshape(x.shape[0], H, -1, D)
 
 
-@torch.no_grad()
-def capture_chunk(model_name, chunk_ids, rt, stride, want_rope: bool):
-    """Capture content-space (and optionally post-RoPE) KV for a chunk, then free the model.
-
-    Returns (k_content, v, k_rope|None), each (L, n_seqs, H, S', D) in fp16 on CPU.
-    """
-    model = load_model(model_name, getattr(torch, rt["dtype"]), rt["device"])
-    mc = model.config
-    theta = float(mc.rope_parameters["rope_theta"])
-    ks, vs, krs = [], [], []
-    try:
-        for b in chunk_ids:
-            with KVCapture(model, store_dtype=torch.float32) as cap:
-                model(input_ids=b.to(rt["device"]), use_cache=False)
-                k, v = cap.stacked()          # (L,B,H,S,D) fp32, already on CPU
-            if want_rope:
-                cos, sin = rope_tables_for(k.shape[3], mc.head_dim, theta, dtype=torch.float32)
-                krs.append(subsample(apply_rope(k, cos, sin), stride).half())
-            ks.append(subsample(k, stride).half())
-            vs.append(subsample(v, stride).half())
-            cap.clear()
-            free(k, v)
-    finally:
-        free(model)
-    cat = lambda xs: torch.cat(xs, dim=1)
-    return cat(ks), cat(vs), (cat(krs) if want_rope else None)
-
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default=str(ROOT / "configs/qwen3_0.6b_to_1.7b.yaml"))
     ap.add_argument("--n-seqs", type=int, default=None, help="override calibration size")
     ap.add_argument("--device", default=None, help="override runtime.device")
-    ap.add_argument("--out", default=str(ROOT / "results/probe_r2.pt"))
+    ap.add_argument("--out", default=None, help="default: <output_dir>/probe_r2_n<N>.pt")
     args = ap.parse_args()
 
-    cfg = yaml.safe_load(open(args.config))
-    cal, rt, pr = cfg["calibration"], cfg["runtime"], cfg["probe"]
-    if args.device:
-        rt["device"] = args.device
-        if args.device == "cpu" and rt["dtype"] == "float16":
-            rt["dtype"] = "float32"          # fp16 matmuls are not supported on CPU
+    cfg = load_config(args.config)
+    cal, pr = cfg["calibration"], cfg.get("probe", {})
+    rt = resolve_runtime(cfg["runtime"], args.device)
     n_seqs = args.n_seqs or cal["n_seqs"]
-    stride, chunk = cal["stride"], rt["chunk"]
 
     from transformers import AutoConfig, AutoTokenizer
 
     tok = AutoTokenizer.from_pretrained(cfg["source"])
-    scfg = AutoConfig.from_pretrained(cfg["source"])
-    tcfg = AutoConfig.from_pretrained(cfg["target"])
-    Ls, Lt = scfg.num_hidden_layers, tcfg.num_hidden_layers
-    H, D = scfg.num_key_value_heads, scfg.head_dim
-    assert (tcfg.num_key_value_heads, tcfg.head_dim) == (H, D), (
-        f"not a matched-KV pair: src {H}x{D} vs "
-        f"tgt {tcfg.num_key_value_heads}x{tcfg.head_dim}"
-    )
+    Ls, Lt, H, D = pair_dims(AutoConfig.from_pretrained(cfg["source"]),
+                             AutoConfig.from_pretrained(cfg["target"]))
     print(f"src {cfg['source']}: {Ls} layers | tgt {cfg['target']}: {Lt} layers "
           f"| {H} kv heads x {D}")
-    print(f"device={rt['device']} dtype={rt['dtype']} chunk={chunk} stride={stride}")
+    print(f"device={rt['device']} dtype={rt['dtype']} shard={rt.get('chunk', 16)} "
+          f"stride={cal['stride']}")
 
-    ids = cached_calibration(
-        tok, n_seqs, cal["seq_len"], cal["seed"],
-        ROOT / f"results/calib_{n_seqs}x{cal['seq_len']}_s{cal['seed']}.pt",
-    )
+    ids = calibration_ids(cfg, tok, n_seqs, ROOT)
     print(f"calibration: {tuple(ids.shape)}")
+    t0 = time.time()
+    src, tgt = calibration_stores(cfg, rt, ids, ROOT)
 
     gdt = getattr(torch, pr.get("gram_dtype", "float32"))
+    gdev = pr.get("gram_device", "cpu")
     rope_diag = pr.get("rope_diagonal_only", True)
+    # Source layer feeding each target layer on the aligned "diagonal".
+    align = [identity_alignment(Ls, Lt)[lt][0] for lt in range(Lt)]
 
-    grid_k = BatchedGrid(Ls, Lt, H, D, dtype=gdt)
-    grid_v = BatchedGrid(Ls, Lt, H, D, dtype=gdt)
+    grid_k = BatchedGrid(Ls, Lt, H, D, dtype=gdt, device=gdev)
+    grid_v = BatchedGrid(Ls, Lt, H, D, dtype=gdt, device=gdev)
     grid_kr = (
-        DiagonalGrid(min(Ls, Lt), H, D, dtype=gdt) if rope_diag
-        else BatchedGrid(Ls, Lt, H, D, dtype=gdt)
+        DiagonalGrid(Lt, H, D, dtype=gdt, device=gdev) if rope_diag
+        else BatchedGrid(Ls, Lt, H, D, dtype=gdt, device=gdev)
     )
     nbytes = sum(
         t.numel() * t.element_size()
         for g in (grid_k, grid_v, grid_kr)
         for t in vars(g).values() if isinstance(t, torch.Tensor)
     )
-    print(f"statistics: {nbytes/1e9:.2f} GB in contiguous tensors")
+    print(f"statistics: {nbytes/1e9:.2f} GB in contiguous tensors on {gdev}")
 
-    n_chunks = (ids.shape[0] + chunk - 1) // chunk
-    t0 = time.time()
-    for ci, c0 in enumerate(range(0, ids.shape[0], chunk)):
-        chunk_ids = list(batches(ids[c0 : c0 + chunk], rt["batch_size"]))
-
-        sk, sv, skr = capture_chunk(cfg["source"], chunk_ids, rt, stride, want_rope=True)
-        tk, tv, tkr = capture_chunk(cfg["target"], chunk_ids, rt, stride, want_rope=True)
+    n_chunks = src.meta["n_shards"]
+    t1 = time.time()
+    for ci, (sk, sv, tk, tv) in enumerate(paired_batches(src, tgt)):
+        # Post-RoPE keys, recomputed from the stored content keys at their true positions.
+        skr = rope_keys(sk[align] if rope_diag else sk, src, dtype=torch.float16)
+        tkr = rope_keys(tk, tgt, dtype=torch.float16)
 
         # Convert, consume and free one pair at a time: holding all six views at once
         # doubled peak memory for no benefit.
-        TK = per_head(tk, H, D); free(tk)
-        SK = per_head(sk, H, D); free(sk)
+        TK = per_head(tk, H, D).to(gdev); del tk
+        SK = per_head(sk, H, D).to(gdev); del sk
         grid_k.update(SK, TK)
-        free(SK, TK)
+        del SK, TK
 
-        TV = per_head(tv, H, D); free(tv)
-        SV = per_head(sv, H, D); free(sv)
+        TV = per_head(tv, H, D).to(gdev); del tv
+        SV = per_head(sv, H, D).to(gdev); del sv
         grid_v.update(SV, TV)
-        free(SV, TV)
+        del SV, TV
 
-        TKR = per_head(tkr, H, D); free(tkr)
-        SKR = per_head(skr, H, D); free(skr)
-        if rope_diag:
-            L = min(Ls, Lt)
-            grid_kr.update(SKR[:L], TKR[:L])
-        else:
-            grid_kr.update(SKR, TKR)
-        free(SKR, TKR)
+        TKR = per_head(tkr, H, D).to(gdev); del tkr
+        SKR = per_head(skr, H, D).to(gdev); del skr
+        grid_kr.update(SKR, TKR)
+        del SKR, TKR
 
-        el = time.time() - t0
+        el = time.time() - t1
         eta = el / (ci + 1) * (n_chunks - ci - 1)
-        print(f"  chunk {ci+1}/{n_chunks}: {min(c0+chunk, ids.shape[0])}/{ids.shape[0]} seqs, "
-              f"n={grid_k.n} obs/head, {el/60:.1f}m elapsed, ~{eta/60:.0f}m left", flush=True)
+        print(f"  shard {ci+1}/{n_chunks}: n={grid_k.n} obs/head, "
+              f"{el/60:.1f}m elapsed, ~{eta/60:.0f}m left", flush=True)
 
-    print("\nsolving ...", flush=True)
+    print(f"\nsolving ... ({(time.time()-t0)/60:.1f} min so far)", flush=True)
     lams = cfg["fit"]["lambdas"]
     lam = lams[len(lams) // 2] if lams else 0.01
     r2 = {
@@ -188,15 +131,16 @@ def main():
         "v": grid_v.solve_r2(lam),
     }
     if rope_diag:
-        diag = grid_kr.solve_r2(lam)            # (L, H)
+        diag = grid_kr.solve_r2(lam)            # (Lt, H), cell (align[lt], lt)
         full = torch.full((Ls, Lt, H), float("nan"))
-        for l in range(diag.shape[0]):
-            full[l, l] = diag[l]
+        for lt in range(Lt):
+            full[align[lt], lt] = diag[lt]
         r2["k_rope"] = full
     else:
         r2["k_rope"] = grid_kr.solve_r2(lam)
+    r2 = {k: v.cpu() for k, v in r2.items()}
 
-    out = Path(args.out)
+    out = Path(args.out) if args.out else output_dir(cfg, ROOT) / f"probe_r2_n{n_seqs}.pt"
     out.parent.mkdir(parents=True, exist_ok=True)
     torch.save({
         "r2": r2, "n_obs": grid_k.n, "n_seqs": n_seqs, "lam": lam,
@@ -212,12 +156,12 @@ def main():
         finite = m[~torch.isnan(m)]
         if finite.numel() == 0:
             continue
-        diag = m.diagonal()
+        diag = aligned_cells(m)
         diag = diag[~torch.isnan(diag)]
         print(f"  {kind:10s}: best {float(finite.max()):.3f}   "
               f"layer-aligned mean {float(diag.mean()):.3f}")
 
-    kc, kr = r2["k_content"].mean(-1).diagonal(), r2["k_rope"].mean(-1).diagonal()
+    kc, kr = aligned_cells(r2["k_content"].mean(-1)), aligned_cells(r2["k_rope"].mean(-1))
     mask = ~(torch.isnan(kc) | torch.isnan(kr))
     if mask.any():
         print(f"  RoPE stripping: K_content {float(kc[mask].mean()):.3f} "

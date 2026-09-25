@@ -98,22 +98,58 @@ src/kvtransfer/
   mapper.py         fitted maps → live cache; zero-copy & mean controls
   graft.py          build a DynamicCache from content-space keys
   data.py           FineWeb-Edu calibration, WikiText-2 eval
-  stream.py         chunked capture helpers
+  stream.py         Gram accumulators for the top-k fit
+  kvstore.py        capture KV once to disk shards; every later pass reads them
+  runtime.py        model loading (device_map for big models), config helpers
+  pipeline.py       config → calibration ids → source/target stores
   eval/ppl.py       prefix-conditioned perplexity + oracle path
+  eval/harness.py   benchmark scoring from a transferred prefix cache
+  eval/tasks.py     ARC-C, HellaSwag, WinoGrande, MMLU, GSM8K (lm-eval prompts)
 
 scripts/
   02_probe_r2.py       Stage A: the R² grid
   03_fit.py            Stage B: fit mappers at each k
   04_report_probe.py   turn a probe .pt into tables + heatmaps
   05_eval.py           perplexity vs all four baselines
-  run_all.sh           the whole pipeline end to end
+  07_eval_tasks.py     benchmark retention (the paper's headline metric)
+  run_all.sh           the whole pipeline end to end (CONFIG=... for other pairs)
 
 tests/
   test_rope.py         RoPE vs HF's own implementation
   test_ridge.py        streaming Gram == dense solve
   test_batched_gram.py batched grid == per-cell reference, to 1e-6
   test_identity.py     END-TO-END GUARDRAIL (marked `slow`)
+  test_kvstore.py      store == direct capture; reuse, resume, invalidation
+  test_unequal_depth.py  2-layer → 3-layer pair: alignment, zero-copy, validation
+  test_harness.py      transferred-cache scoring == standalone scoring
+  test_scripts_pipeline.py  every script end to end on a tiny unequal pair (`slow`)
 ```
+
+### Pairs with different depths
+
+Source and target may have different layer counts (Qwen3-14B has 40, Qwen3-32B has 64).
+Wherever a "layer-aligned" source layer is needed (the zero-copy control, the identity
+baseline, the RoPE comparison, the reports), target layer *l* reads source layer
+`round(l · (Ls−1)/(Lt−1))`, which is *l* → *l* when depths match. Mappers record the
+pair they were fitted on and refuse to run on another.
+
+### Capture once
+
+Each model's pre-RoPE KV for the calibration set is written to `runtime.store_dir` once
+(`kvstore.py`). The probe, every k in the fit sweep, and the evaluations read those
+shards; a stage whose store already exists never loads the model. A store is keyed by
+model, token ids, stride and dtype, so a changed calibration set is recaptured rather
+than silently reused, and an interrupted capture resumes at the missing shard.
+
+### Benchmarks
+
+`07_eval_tasks.py` scores each prompt with its context prefilled by the source, mapped,
+and grafted into the target (`context[:-1]` is transferred; the target reads the last
+context token and the answer). Standalone and oracle runs use identical scoring, and
+`tests/test_harness.py` checks they agree. Big pairs run in disk-budgeted rounds
+(`eval.store_budget_gb`) and resume from `eval_tasks.partial.json`. Tasks come from
+`eval.tasks`; with none listed, only ARC-Challenge and WinoGrande (the smallest
+downloads) run.
 
 ### The guardrail
 
@@ -146,23 +182,33 @@ bash scripts/run_all.sh                    # 500 sequences (paper-faithful), CUD
 N_SEQS=100 bash scripts/run_all.sh         # quicker pass
 DEVICE=cpu N_SEQS=50 bash scripts/run_all.sh
 DEVICE=mps N_SEQS=50 bash scripts/run_all.sh   # Apple silicon
+CONFIG=configs/qwen3_14b_to_32b.yaml bash scripts/run_all.sh   # paper's pair, 80 GB GPU
 ```
 
 Or step by step:
 
 ```bash
-pytest tests/ -q -m "not slow"     # 20 fast tests
-pytest tests/ -q -m slow           # 4 end-to-end guardrails (downloads 0.6B)
+pytest tests/ -q -m "not slow"     # 58 fast tests, no downloads
+pytest tests/ -q -m slow           # guardrails on real 0.6B + tiny-pair script run
 
-python scripts/02_probe_r2.py --n-seqs 500 --device cuda --out results/probe.pt
-python scripts/04_report_probe.py results/probe.pt
-python scripts/03_fit.py --probe results/probe.pt --k 1 2 4 8 12 --identity-baseline
-python scripts/05_eval.py --out results/eval_ppl.json
+C=configs/qwen3_0.6b_to_1.7b.yaml
+python scripts/02_probe_r2.py --config $C --device cuda      # -> <output_dir>/probe_r2_n500.pt
+python scripts/04_report_probe.py results/probe_r2_n500.pt
+python scripts/03_fit.py --config $C --k 1 2 4 8 12 --identity-baseline
+python scripts/05_eval.py --config $C
+python scripts/07_eval_tasks.py --config $C --limit 200     # benchmark retention
 ```
 
-Configuration lives in `configs/qwen3_0.6b_to_1.7b.yaml` — model pair, calibration size,
-chunk size, device, λ grid, k sweep. `configs/selftest_0.6b.yaml` runs the whole
-pipeline 0.6B → 0.6B as a cheap smoke test.
+Configuration lives in `configs/` — model pair, `output_dir`, calibration size, shard
+size, device, λ grid, k sweep, benchmark tasks. `qwen3_14b_to_32b.yaml` is the paper's
+best pair (the direct check against its published numbers). `smoke_0.6b_to_1.7b.yaml`
+runs every stage on the real small pair at laptop scale; `selftest_0.6b.yaml` runs it
+0.6B → 0.6B.
+
+> **Mappers fitted before this change with k ≥ 2 should be refit.** Keys and values are
+> ranked separately in top-k selection and often pick different source layers, but the
+> saved mapper recorded only the key selection, so value maps were applied to the wrong
+> source layers at eval time. Loading such a mapper now warns.
 
 ### Expected runtime
 

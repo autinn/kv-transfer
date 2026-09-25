@@ -20,6 +20,7 @@ from dataclasses import dataclass
 import torch
 
 from .graft import build_cache
+from .select import identity_alignment
 
 
 @dataclass
@@ -38,13 +39,27 @@ class KVMapper:
         head_dim: int,
         kv_heads: int,
         rope_theta_target: float,
+        n_src_layers: int | None = None,
+        src_layers_v: dict[int, list[int]] | None = None,
     ):
         self.src_layers = {int(k): list(v) for k, v in src_layers.items()}
+        # Values may read different source layers than keys: top-k selection ranks K
+        # and V separately. Defaults to the key selection.
+        self.src_layers_v = (
+            self.src_layers if src_layers_v is None
+            else {int(k): list(v) for k, v in src_layers_v.items()}
+        )
+        if sorted(self.src_layers_v) != sorted(self.src_layers):
+            raise ValueError("key and value selections must cover the same target layers")
         self.head_dim = head_dim
         self.kv_heads = kv_heads
         self.rope_theta_target = rope_theta_target
+        # Recorded so a mapper fitted for one pair is refused on another; None for
+        # mappers saved before this field existed.
+        self.n_src_layers = n_src_layers
         self.K: dict[tuple[int, int], HeadMap] = {}
         self.V: dict[tuple[int, int], HeadMap] = {}
+        self.device = torch.device("cpu")
 
     @property
     def n_tgt_layers(self) -> int:
@@ -52,7 +67,36 @@ class KVMapper:
 
     def set(self, kind: str, lt: int, h: int, W, b, r2: float) -> None:
         store = self.K if kind == "K" else self.V
-        store[(lt, h)] = HeadMap(W.to(torch.float32), b.to(torch.float32), float(r2))
+        store[(lt, h)] = HeadMap(
+            W.to(self.device, torch.float32), b.to(self.device, torch.float32), float(r2)
+        )
+
+    def to(self, device) -> "KVMapper":
+        """Move the maps to `device`; `map_content` then runs there."""
+        self.device = torch.device(device)
+        for store in (self.K, self.V):
+            for key, m in store.items():
+                store[key] = HeadMap(m.W.to(self.device), m.b.to(self.device), m.r2)
+        return self
+
+    def check_compat(self, n_src_layers: int, n_tgt_layers: int, kv_heads: int, head_dim: int) -> None:
+        """Refuse to apply a mapper to a model pair it was not fitted for."""
+        problems = []
+        if self.n_tgt_layers != n_tgt_layers:
+            problems.append(f"maps {self.n_tgt_layers} target layers, target has {n_tgt_layers}")
+        if self.n_src_layers is not None and self.n_src_layers != n_src_layers:
+            problems.append(f"fitted on {self.n_src_layers} source layers, source has {n_src_layers}")
+        top = max(max(v) for sel in (self.src_layers, self.src_layers_v) for v in sel.values())
+        if top >= n_src_layers:
+            problems.append(f"reads source layer {top}, source has {n_src_layers}")
+        if (self.kv_heads, self.head_dim) != (kv_heads, head_dim):
+            problems.append(f"shape {self.kv_heads}x{self.head_dim} vs model {kv_heads}x{head_dim}")
+        missing = [(lt, h) for lt in range(self.n_tgt_layers) for h in range(self.kv_heads)
+                   if (lt, h) not in self.K or (lt, h) not in self.V]
+        if missing:
+            problems.append(f"{len(missing)} (layer, head) maps missing, e.g. {missing[0]}")
+        if problems:
+            raise ValueError("mapper does not fit this model pair: " + "; ".join(problems))
 
     @torch.no_grad()
     def map_content(
@@ -60,18 +104,31 @@ class KVMapper:
     ) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
         """Map content-space source KV to content-space target KV.
 
-        src_k[l], src_v[l]: (B, H, S, D) pre-RoPE. Returns lists over target layers.
+        src_k[l], src_v[l]: (B, H, S, D) pre-RoPE, one entry per SOURCE layer. Returns
+        lists over TARGET layers, on the mapper's device. The two counts differ when the
+        models have different depths.
         """
+        dev = self.device
+        needed = sorted({ls for sel in (self.src_layers, self.src_layers_v)
+                         for srcs in sel.values() for ls in srcs})
+        if needed[-1] >= len(src_k) or len(src_k) != len(src_v):
+            raise ValueError(
+                f"mapper reads source layer {needed[-1]} but got {len(src_k)} key / "
+                f"{len(src_v)} value layers"
+            )
+        # Each source layer may feed several target layers; move it to the device once.
+        sk = {ls: src_k[ls].to(dev, torch.float32) for ls in needed}
+        sv = {ls: src_v[ls].to(dev, torch.float32) for ls in needed}
         out_k, out_v = [], []
         for lt in range(self.n_tgt_layers):
-            srcs = self.src_layers[lt]
-            B, H, S, D = src_k[srcs[0]].shape
-            ks = torch.empty(B, H, S, D, dtype=torch.float32)
-            vs = torch.empty(B, H, S, D, dtype=torch.float32)
+            srcs, srcs_v = self.src_layers[lt], self.src_layers_v[lt]
+            B, H, S, D = sk[srcs[0]].shape
+            ks = torch.empty(B, H, S, D, dtype=torch.float32, device=dev)
+            vs = torch.empty(B, H, S, D, dtype=torch.float32, device=dev)
             for h in range(H):
                 # (B, S, k*D): concatenate the chosen source layers for this head.
-                xk = torch.cat([src_k[ls][:, h].float() for ls in srcs], dim=-1)
-                xv = torch.cat([src_v[ls][:, h].float() for ls in srcs], dim=-1)
+                xk = torch.cat([sk[ls][:, h] for ls in srcs], dim=-1)
+                xv = torch.cat([sv[ls][:, h] for ls in srcs_v], dim=-1)
                 mk, mv = self.K[(lt, h)], self.V[(lt, h)]
                 ks[:, h] = xk @ mk.W + mk.b
                 vs[:, h] = xv @ mv.W + mv.b
@@ -97,17 +154,29 @@ class KVMapper:
             "meta": {
                 "src_layers": self.src_layers, "head_dim": self.head_dim,
                 "kv_heads": self.kv_heads, "rope_theta_target": self.rope_theta_target,
+                "n_src_layers": self.n_src_layers,
+                "src_layers_v": self.src_layers_v,
             }
         }
         for name, store in (("K", self.K), ("V", self.V)):
             for (lt, h), m in store.items():
-                sd[f"{name}.{lt}.{h}"] = {"W": m.W, "b": m.b, "r2": m.r2}
+                sd[f"{name}.{lt}.{h}"] = {"W": m.W.cpu(), "b": m.b.cpu(), "r2": m.r2}
         return sd
 
     @classmethod
     def from_state_dict(cls, sd: dict) -> "KVMapper":
         m = sd["meta"]
-        o = cls(m["src_layers"], m["head_dim"], m["kv_heads"], m["rope_theta_target"])
+        if "src_layers_v" not in m and any(len(v) > 1 for v in m["src_layers"].values()):
+            import warnings
+            warnings.warn(
+                "mapper saved before value selections were recorded: its V maps may have "
+                "been fitted on different source layers than the ones it will read. Refit it.",
+                stacklevel=2,
+            )
+        o = KVMapper(
+            m["src_layers"], m["head_dim"], m["kv_heads"], m["rope_theta_target"],
+            n_src_layers=m.get("n_src_layers"), src_layers_v=m.get("src_layers_v"),
+        )
         for key, val in sd.items():
             if key == "meta":
                 continue
@@ -122,11 +191,16 @@ class ZeroCopyMapper(KVMapper):
     The point of comparison the retention number needs. If a fitted mapper does not
     clearly beat this, the linear map has not learned anything about the cross-model
     relationship -- the models were simply already similar enough.
+
+    Target layer lt reads source layer round(lt * (Ls-1)/(Lt-1)): layer l -> l when the
+    depths match, proportional when they do not (14B's 40 layers spread over 32B's 64).
     """
 
-    def __init__(self, n_tgt_layers, head_dim, kv_heads, rope_theta_target):
+    def __init__(self, n_tgt_layers, head_dim, kv_heads, rope_theta_target, n_src_layers=None):
+        n_src_layers = n_tgt_layers if n_src_layers is None else n_src_layers
         super().__init__(
-            {l: [l] for l in range(n_tgt_layers)}, head_dim, kv_heads, rope_theta_target
+            identity_alignment(n_src_layers, n_tgt_layers), head_dim, kv_heads,
+            rope_theta_target, n_src_layers=n_src_layers,
         )
         eye = torch.eye(head_dim)
         zero = torch.zeros(head_dim)
@@ -144,10 +218,12 @@ class MeanMapper(KVMapper):
     can still score non-trivially on multiple-choice benchmarks.
     """
 
-    def __init__(self, means_k, means_v, head_dim, kv_heads, rope_theta_target):
+    def __init__(self, means_k, means_v, head_dim, kv_heads, rope_theta_target, n_src_layers=None):
         n = len(means_k)
+        # W is zero, so which source layer is "read" is irrelevant; layer 0 always exists.
         super().__init__(
-            {l: [l] for l in range(n)}, head_dim, kv_heads, rope_theta_target
+            {l: [0] for l in range(n)}, head_dim, kv_heads, rope_theta_target,
+            n_src_layers=n_src_layers,
         )
         zeroW = torch.zeros(head_dim, head_dim)
         for lt in range(n):

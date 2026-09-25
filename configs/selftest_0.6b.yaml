@@ -3,6 +3,7 @@
 # The mapper should come out near-identity and retention near 100%.
 source: Qwen/Qwen3-0.6B
 target: Qwen/Qwen3-0.6B
+output_dir: results/selftest
 calibration:
   dataset: fineweb-edu
   n_seqs: 4

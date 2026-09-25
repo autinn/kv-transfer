@@ -199,3 +199,24 @@ def test_cross_layer_r2_is_below_self_r2(loaded):
     self_r2 = solve(g.K[0][0][0], lam=1e-6).r2
     cross_r2 = solve(g.K[0][1][0], lam=1e-6).r2
     assert self_r2 > cross_r2, f"self {self_r2:.3f} should beat cross {cross_r2:.3f}"
+
+
+def test_benchmark_harness_oracle_matches_standalone(loaded):
+    """On the real model: a transferred-then-grafted prompt scores and generates exactly
+    like the target reading it itself, which is what makes retention a clean ratio."""
+    from kvtransfer.eval.harness import (
+        greedy_generate, oracle_contents, score_continuations, split_context,
+    )
+
+    tok, model = loaded
+    ctx, _ = split_context(tok, "Question: Which gas do plants absorb from the air?\nAnswer:", " x")
+    conts = [split_context(tok, "Question: q\nAnswer:", c)[1]
+             for c in (" carbon dioxide", " oxygen", " nitrogen", " helium")]
+    content = next(oracle_contents(model, [ctx]))
+    a = score_continuations(model, ctx, conts)
+    b = score_continuations(model, ctx, conts, content)
+    assert a == pytest.approx(b, abs=2e-3)
+
+    g1 = greedy_generate(model, tok, ctx, None, max_new_tokens=8)
+    g2 = greedy_generate(model, tok, ctx, content, max_new_tokens=8)
+    assert g1 == g2

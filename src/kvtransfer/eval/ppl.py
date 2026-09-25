@@ -46,13 +46,19 @@ def standalone_ppl(model, ids: torch.Tensor, prefix_len: int, device="cpu") -> f
 
 
 @torch.no_grad()
-def source_prefill_content(src_model, seq: torch.Tensor, prefix_len: int, n_layers: int):
-    """Run the source model over the prefix and return content-space (pre-RoPE) KV."""
+def source_prefill_content(src_model, seq: torch.Tensor, prefix_len: int, n_layers: int | None = None):
+    """Run the source model over the prefix and return content-space (pre-RoPE) KV.
+
+    Returns one entry per SOURCE layer. `n_layers` is accepted for compatibility and
+    must, if given, equal the source model's depth.
+    """
     with KVCapture(src_model, store_dtype=torch.float32) as cap:
+        if n_layers is not None and n_layers != cap.n_layers:
+            raise ValueError(f"source has {cap.n_layers} layers, asked for {n_layers}")
         src_model(input_ids=seq[:, :prefix_len], use_cache=False)
         return (
-            [cap.keys[l] for l in range(n_layers)],
-            [cap.values[l] for l in range(n_layers)],
+            [cap.keys[l] for l in cap.layers],
+            [cap.values[l] for l in cap.layers],
         )
 
 
@@ -72,7 +78,9 @@ def transfer_ppl(
     while the target model runs.
     """
     total, n = 0.0, 0
+    n_seen = 0
     for seq, (sk, sv) in zip(ids, src_caches):
+        n_seen += 1
         seq = seq.unsqueeze(0)
         cache = mapper.to_cache(sk, sv, offset=0, dtype=tgt_model.dtype, device=device, config=tgt_model.config)
         rest = seq[:, prefix_len:].to(device)
@@ -86,6 +94,8 @@ def transfer_ppl(
         total += s
         n += c
         del cache
+    if n_seen != len(ids):
+        raise ValueError(f"got source caches for {n_seen} of {len(ids)} sequences")
     return float(torch.exp(torch.tensor(total / n)))
 
 
@@ -97,8 +107,11 @@ def oracle_ppl(tgt_model, ids: torch.Tensor, prefix_len: int, n_layers: int, dev
     this must match `standalone_ppl` almost exactly, and if it does not, the harness is
     at fault rather than the mapper.
     """
+    from ..runtime import kv_dims, rope_theta
+
     cfg = tgt_model.config
-    theta = float(cfg.rope_parameters["rope_theta"])
+    theta = rope_theta(cfg)
+    head_dim = kv_dims(cfg)[2]
     total, n = 0.0, 0
     for seq in ids:
         seq = seq.unsqueeze(0)
@@ -106,7 +119,7 @@ def oracle_ppl(tgt_model, ids: torch.Tensor, prefix_len: int, n_layers: int, dev
             tgt_model(input_ids=seq[:, :prefix_len].to(device), use_cache=False)
             k = [cap.keys[l] for l in range(n_layers)]
             v = [cap.values[l] for l in range(n_layers)]
-        cache = build_cache(k, v, cfg.head_dim, theta, dtype=tgt_model.dtype, device=device, config=tgt_model.config)
+        cache = build_cache(k, v, head_dim, theta, dtype=tgt_model.dtype, device=device, config=tgt_model.config)
         rest = seq[:, prefix_len:].to(device)
         if rest.numel() == 0:
             continue

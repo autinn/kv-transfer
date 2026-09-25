@@ -64,3 +64,16 @@ def selection_summary(r2: torch.Tensor, ks=(1, 2, 4, 8)) -> str:
             f"  tgt {lt:2d}: " + ", ".join(f"src {s}({sc})" for s, sc in zip(best, scores))
         )
     return "\n".join(lines)
+
+
+def aligned_cells(m: torch.Tensor) -> torch.Tensor:
+    """Values of an (n_src, n_tgt, ...) grid at the layer-aligned cells.
+
+    For equal depth this is `m.diagonal()`. For unequal depth (14B: 40 layers -> 32B:
+    64) `diagonal()` would silently pair target layer 50 with nothing and target layer
+    10 with the wrong source, so alignment is proportional, as in `identity_alignment`.
+    Returns shape (n_tgt, ...).
+    """
+    n_src, n_tgt = m.shape[0], m.shape[1]
+    align = identity_alignment(n_src, n_tgt)
+    return torch.stack([m[align[lt][0], lt] for lt in range(n_tgt)])

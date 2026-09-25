@@ -12,7 +12,7 @@ import numpy as np
 import torch
 
 from kvtransfer.mapper import KVMapper
-from kvtransfer.select import rank_sources
+from kvtransfer.select import aligned_cells, identity_alignment, rank_sources
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -46,14 +46,16 @@ def plot_probe(probe: dict, outdir: Path) -> None:
     best = order[:, 0].numpy()
     fig, ax = plt.subplots(figsize=(8, 4.5))
     targets = np.arange(len(best))
-    ax.plot(targets, targets, "--", color="0.55", label="layer-aligned")
+    n_src = r2["k_content"].shape[0]
+    align = identity_alignment(n_src, len(best))
+    ax.plot(targets, [align[t][0] for t in targets], "--", color="0.55", label="layer-aligned")
     ax.plot(targets, best, "o-", color="#1769aa", label="best source layer")
     ax.set(xlabel="Target layer", ylabel="Selected source layer", title="Best source layer per target")
-    ax.set_ylim(-0.8, max(len(best) - 1, 1) + 0.8)
+    ax.set_ylim(-0.8, max(n_src - 1, 1) + 0.8)
     ax.legend()
     save(fig, outdir / "best_source_layer_alignment.png")
 
-    diagonal = k.diagonal().numpy()
+    diagonal = aligned_cells(k).numpy()
     all_values = k.flatten().numpy()
     fig, ax = plt.subplots(figsize=(6, 4.5))
     ax.boxplot([all_values, diagonal], labels=["All layer pairs", "Aligned pairs"], showmeans=True)

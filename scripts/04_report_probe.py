@@ -11,7 +11,7 @@ from pathlib import Path
 
 import torch
 
-from kvtransfer.select import rank_sources
+from kvtransfer.select import aligned_cells, identity_alignment, rank_sources
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -58,12 +58,12 @@ def main():
         if finite.numel() == 0:
             continue
         best = float(finite.max())
-        diag = m.diagonal()
+        diag = aligned_cells(m)
         diag = diag[~torch.isnan(diag)]
         print(f"  {kind:10s}: best {best:.3f}   layer-aligned mean {float(diag.mean()):.3f}")
 
-    kc = r2["k_content"].mean(-1).diagonal()
-    kr = r2["k_rope"].mean(-1).diagonal()
+    kc = aligned_cells(r2["k_content"].mean(-1))
+    kr = aligned_cells(r2["k_rope"].mean(-1))
     mask = ~(torch.isnan(kc) | torch.isnan(kr))
     if mask.any():
         print(f"\n  RoPE stripping: K_content {float(kc[mask].mean()):.3f} "
@@ -73,13 +73,18 @@ def main():
     print("\n=== best source layer per target layer (k_content) ===")
     order = rank_sources(r2["k_content"])
     havg = r2["k_content"].mean(-1)
+    align = identity_alignment(Ls, Lt)
     aligned = 0
     for lt in range(Lt):
         b = int(order[lt, 0])
-        aligned += (b == lt)
-        if lt % 4 == 0 or b != lt:
+        a = align[lt][0]
+        # Within one layer of the proportional alignment counts as aligned when depths
+        # differ, since rounding makes the "aligned" source layer ambiguous.
+        ok = b == a if Ls == Lt else abs(b - a) <= 1
+        aligned += ok
+        if lt % 4 == 0 or not ok:
             print(f"  tgt {lt:2d} <- src {b:2d}  (R^2 {float(havg[b, lt]):.3f})"
-                  + ("" if b == lt else "   [not layer-aligned]"))
+                  + ("" if ok else f"   [aligned would be src {a}]"))
     print(f"  layer-aligned in {aligned}/{Lt} target layers")
 
     print("\n=== vs paper (Qwen3 14B->32B) ===")

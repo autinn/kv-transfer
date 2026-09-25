@@ -1,8 +1,8 @@
-"""Single-pass streaming accumulation of cross-model KV statistics.
+"""Streaming accumulation of cross-model KV statistics.
 
-Disk-lean by construction: activations are never written out. For each calibration
-batch we run the source model, run the target model, accumulate normal-equation
-statistics, and drop everything.
+Batches of captured activations (read back from `kvstore` shards) are folded into
+normal-equation statistics and dropped, so memory holds only the statistics and one
+shard at a time.
 
 Two stages, because accumulating against the full source stack at once does not fit:
 a (28*128)^2 fp64 Gram is 103 MB, and one per (target layer, head, K/V) is **46 GB**.
@@ -119,31 +119,45 @@ class TopKGrams:
         kv_heads: int,
         head_dim: int,
         device="cpu",
+        kinds: tuple[str, ...] = ("K", "V"),
     ):
         self.src_layers = {int(k): list(v) for k, v in src_layers.items()}
         self.kv_heads, self.head_dim = kv_heads, head_dim
+        self.kinds = tuple(kinds)
         self.K, self.V = {}, {}
         for lt, srcs in self.src_layers.items():
             d_in = len(srcs) * head_dim
             for h in range(kv_heads):
-                self.K[(lt, h)] = GramAccumulator(d_in, head_dim, device)
-                self.V[(lt, h)] = GramAccumulator(d_in, head_dim, device)
+                if "K" in self.kinds:
+                    self.K[(lt, h)] = GramAccumulator(d_in, head_dim, device)
+                if "V" in self.kinds:
+                    self.V[(lt, h)] = GramAccumulator(d_in, head_dim, device)
+
+    @staticmethod
+    def bytes_per_target_layer(k: int, kv_heads: int, head_dim: int, n_kinds: int = 2) -> int:
+        """fp64 accumulator footprint of one target layer, for grouping under a budget."""
+        d_in = k * head_dim
+        per = d_in * d_in + d_in * head_dim + d_in + 2 * head_dim
+        return 8 * per * kv_heads * n_kinds
 
     @torch.no_grad()
     def update(self, src_k, src_v, tgt_k, tgt_v) -> None:
+        """Args (L, B, H, S, D); source and target layer counts may differ."""
         sk, sv = _per_head(src_k), _per_head(src_v)
         tk, tv = _per_head(tgt_k), _per_head(tgt_v)
         for lt, srcs in self.src_layers.items():
             for h in range(self.kv_heads):
                 # concat chosen source layers along the feature dim -> (N, k*D)
-                xk = torch.cat([sk[ls, h] for ls in srcs], dim=-1)
-                xv = torch.cat([sv[ls, h] for ls in srcs], dim=-1)
-                self.K[(lt, h)].update(xk, tk[lt, h])
-                self.V[(lt, h)].update(xv, tv[lt, h])
+                if "K" in self.kinds:
+                    xk = torch.cat([sk[ls, h] for ls in srcs], dim=-1)
+                    self.K[(lt, h)].update(xk, tk[lt, h])
+                if "V" in self.kinds:
+                    xv = torch.cat([sv[ls, h] for ls in srcs], dim=-1)
+                    self.V[(lt, h)].update(xv, tv[lt, h])
 
     def state_dict(self) -> dict:
         sd = {"meta": {"src_layers": self.src_layers, "kv_heads": self.kv_heads,
-                       "head_dim": self.head_dim}}
+                       "head_dim": self.head_dim, "kinds": list(self.kinds)}}
         for name, store in (("K", self.K), ("V", self.V)):
             for (lt, h), acc in store.items():
                 sd[f"{name}.{lt}.{h}"] = acc.state_dict()
@@ -152,7 +166,7 @@ class TopKGrams:
     @classmethod
     def from_state_dict(cls, sd: dict) -> "TopKGrams":
         m = sd["meta"]
-        o = cls(m["src_layers"], m["kv_heads"], m["head_dim"])
+        o = cls(m["src_layers"], m["kv_heads"], m["head_dim"], kinds=tuple(m.get("kinds", ("K", "V"))))
         for key, val in sd.items():
             if key == "meta":
                 continue

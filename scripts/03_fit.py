@@ -1,11 +1,16 @@
 """Stage B: fit production mappers at a chosen k, using Stage A's source selection.
 
-Reads results/probe_r2*.pt, picks the top-k source layers per target layer, streams the
-calibration set once more to accumulate top-k Grams, and solves for the per-head ridge
-maps. Saves a KVMapper per (k, lambda).
+Reads the probe, picks the top-k source layers per target layer, streams the captured
+calibration KV back from disk to accumulate top-k Grams, and solves for the per-head
+ridge maps. Saves a KVMapper per (k, lambda).
 
-Because the Gram is cached per k, sweeping lambda afterwards is one Cholesky each --
-the expensive part is the streaming pass, so all lambdas are solved from the same pass.
+Capture happens once (`kvtransfer.kvstore`); if the probe already ran on the same
+calibration set, this stage never loads a model. Each (k, lambda) is then a disk pass
+plus one Cholesky per head, and all lambdas are solved from the same pass.
+
+Large pairs do not fit every target layer's Grams in memory at once (14B -> 32B at k=20
+is ~50 GB of fp64), so target layers are fitted in groups under `fit.max_gram_gb`, one
+disk pass per group.
 """
 
 from __future__ import annotations
@@ -15,108 +20,132 @@ import time
 from pathlib import Path
 
 import torch
-import yaml
 
-from kvtransfer.data import batches, cached_calibration
 from kvtransfer.mapper import KVMapper
+from kvtransfer.pipeline import calibration_ids, calibration_stores, load_config, paired_batches
 from kvtransfer.ridge import solve
+from kvtransfer.runtime import output_dir, pair_dims, resolve_runtime, rope_theta
 from kvtransfer.select import identity_alignment, top_k
 from kvtransfer.stream import TopKGrams
 
-import sys
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from importlib import import_module
-
-_probe = import_module("02_probe_r2")
-capture_chunk, free = _probe.capture_chunk, _probe.free
-
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def layer_groups(sel_k, sel_v, H, D, budget_bytes) -> list[list[int]]:
+    """Split target layers into groups whose Grams fit under the budget."""
+    same = sel_k == sel_v
+    groups, cur, used = [], [], 0
+    for lt in sorted(sel_k):
+        if same:
+            need = TopKGrams.bytes_per_target_layer(len(sel_k[lt]), H, D, n_kinds=2)
+        else:
+            need = (TopKGrams.bytes_per_target_layer(len(sel_k[lt]), H, D, n_kinds=1)
+                    + TopKGrams.bytes_per_target_layer(len(sel_v[lt]), H, D, n_kinds=1))
+        if cur and used + need > budget_bytes:
+            groups.append(cur)
+            cur, used = [], 0
+        cur.append(lt)
+        used += need
+    if cur:
+        groups.append(cur)
+    return groups
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default=str(ROOT / "configs/qwen3_0.6b_to_1.7b.yaml"))
-    ap.add_argument("--probe", default=str(ROOT / "results/probe_r2_n100.pt"))
+    ap.add_argument("--probe", default=None, help="default: <output_dir>/probe_r2_n<N>.pt")
     ap.add_argument("--n-seqs", type=int, default=None)
-    ap.add_argument("--k", type=int, nargs="+", default=[1, 4, 8])
+    ap.add_argument("--device", default=None, help="override runtime.device")
+    ap.add_argument("--k", type=int, nargs="+", default=None, help="default: fit.k_sweep")
     ap.add_argument("--identity-baseline", action="store_true",
                     help="also fit the layer-aligned single-source baseline")
-    ap.add_argument("--outdir", default=str(ROOT / "results/mappers"))
+    ap.add_argument("--outdir", default=None, help="default: <output_dir>/mappers")
     args = ap.parse_args()
 
-    cfg = yaml.safe_load(open(args.config))
-    cal, rt = cfg["calibration"], cfg["runtime"]
-    probe = torch.load(args.probe)
+    cfg = load_config(args.config)
+    cal, fit = cfg["calibration"], cfg.get("fit", {})
+    rt = resolve_runtime(cfg["runtime"], args.device)
+    out_root = output_dir(cfg, ROOT)
+    n_seqs = args.n_seqs or cal["n_seqs"]
+    probe_path = Path(args.probe) if args.probe else out_root / f"probe_r2_n{n_seqs}.pt"
+    probe = torch.load(probe_path)
     r2_k, r2_v = probe["r2"]["k_content"], probe["r2"]["v"]
-    Ls, Lt, H, D = probe["Ls"], probe["Lt"], probe["H"], probe["D"]
-    n_seqs = args.n_seqs or probe["n_seqs"]
 
     from transformers import AutoConfig, AutoTokenizer
 
-    tok = AutoTokenizer.from_pretrained(cfg["source"])
-    theta_t = float(AutoConfig.from_pretrained(cfg["target"]).rope_parameters["rope_theta"])
+    scfg, tcfg = AutoConfig.from_pretrained(cfg["source"]), AutoConfig.from_pretrained(cfg["target"])
+    Ls, Lt, H, D = pair_dims(scfg, tcfg)
+    if (probe["Ls"], probe["Lt"], probe["H"], probe["D"]) != (Ls, Lt, H, D):
+        raise ValueError(f"{probe_path} was run on a different model pair "
+                         f"({probe['source']} -> {probe['target']})")
+    theta_t = rope_theta(tcfg)
 
-    ids = cached_calibration(
-        tok, n_seqs, cal["seq_len"], cal["seed"],
-        ROOT / f"results/calib_{n_seqs}x{cal['seq_len']}_s{cal['seed']}.pt",
-    )
-    print(f"calibration {tuple(ids.shape)}")
+    tok = AutoTokenizer.from_pretrained(cfg["source"])
+    ids = calibration_ids(cfg, tok, n_seqs, ROOT)
+    print(f"calibration {tuple(ids.shape)}  | {Ls} -> {Lt} layers, {H}x{D}")
+    src, tgt = calibration_stores(cfg, rt, ids, ROOT)
 
     # Selections to fit. Keys and values get their own selections: the probe shows they
     # do not necessarily peak at the same source layers.
     selections = {}
-    for k in args.k:
+    for k in args.k or fit.get("k_sweep", [1, 4, 8]):
+        if k > Ls:
+            print(f"skipping k={k}: source has only {Ls} layers")
+            continue
         selections[f"k{k}"] = (top_k(r2_k, k), top_k(r2_v, k))
     if args.identity_baseline:
         ident = identity_alignment(Ls, Lt)
         selections["identity"] = (ident, ident)
 
-    lams = cfg["fit"]["lambdas"]
-    outdir = Path(args.outdir)
+    lams = fit.get("lambdas", [0.01])
+    budget = float(fit.get("max_gram_gb", 8)) * 1e9
+    gdev = fit.get("gram_device", "cpu")
+    outdir = Path(args.outdir) if args.outdir else out_root / "mappers"
     outdir.mkdir(parents=True, exist_ok=True)
 
     for name, (sel_k, sel_v) in selections.items():
         print(f"\n=== fitting {name} ===")
-        sizes = {len(v) for v in sel_k.values()}
-        print(f"  sources per target layer: {sorted(sizes)}")
-        # Keys and values may select different source layers, so each needs its own
-        # feature layout. When the selections coincide (the common case) one Gram set
-        # carries both and the second pass is skipped.
+        print(f"  sources per target layer: {sorted({len(v) for v in sel_k.values()})}")
         same_sel = sel_k == sel_v
-        gk = TopKGrams(sel_k, H, D)
-        gv = gk if same_sel else TopKGrams(sel_v, H, D)
-
+        groups = layer_groups(sel_k, sel_v, H, D, budget)
+        print(f"  {len(groups)} target-layer group(s) under {budget/1e9:.0f} GB")
+        # The mapper must record BOTH selections: V maps fitted on sel_v's features are
+        # meaningless if applied to sel_k's layers at inference.
+        mappers = {lam: KVMapper(sel_k, D, H, theta_t, n_src_layers=Ls, src_layers_v=sel_v)
+                   for lam in lams}
+        if not same_sel:
+            n_diff = sum(sel_k[lt] != sel_v[lt] for lt in sel_k)
+            print(f"  K and V select different source layers in {n_diff}/{Lt} target layers")
         t0 = time.time()
-        chunk = rt["chunk"]
-        n_chunks = (ids.shape[0] + chunk - 1) // chunk
-        for ci, c0 in enumerate(range(0, ids.shape[0], chunk)):
-            chunk_ids = list(batches(ids[c0 : c0 + chunk], rt["batch_size"]))
-            sk, sv, _ = capture_chunk(cfg["source"], chunk_ids, rt, cal["stride"], want_rope=False)
-            tk, tv, _ = capture_chunk(cfg["target"], chunk_ids, rt, cal["stride"], want_rope=False)
-            gk.update(sk, sv, tk, tv)
-            if not same_sel:
-                gv.update(sk, sv, tk, tv)
-            print(f"  chunk {ci+1}/{n_chunks}, {(time.time()-t0)/60:.1f}m", flush=True)
-            free(sk, sv, tk, tv)
+        for gi, group in enumerate(groups):
+            gk = TopKGrams({lt: sel_k[lt] for lt in group}, H, D, device=gdev,
+                           kinds=("K", "V") if same_sel else ("K",))
+            gv = gk if same_sel else TopKGrams({lt: sel_v[lt] for lt in group}, H, D,
+                                               device=gdev, kinds=("V",))
+            for sk, sv, tk, tv in paired_batches(src, tgt):
+                if gdev != "cpu":
+                    sk, sv, tk, tv = (x.to(gdev) for x in (sk, sv, tk, tv))
+                gk.update(sk, sv, tk, tv)
+                if not same_sel:
+                    gv.update(sk, sv, tk, tv)
+            for lam in lams:
+                for lt in group:
+                    for h in range(H):
+                        sk_sol = solve(gk.K[(lt, h)], lam=lam)
+                        sv_sol = solve(gv.V[(lt, h)], lam=lam)
+                        mappers[lam].set("K", lt, h, sk_sol.W, sk_sol.b, sk_sol.r2)
+                        mappers[lam].set("V", lt, h, sv_sol.W, sv_sol.b, sv_sol.r2)
+            del gk, gv
+            print(f"  group {gi+1}/{len(groups)} (target layers {group[0]}-{group[-1]}) "
+                  f"{(time.time()-t0)/60:.1f}m", flush=True)
 
-        for lam in lams:
-            mapper = KVMapper(sel_k, D, H, theta_t)
-            r2s_k, r2s_v = [], []
-            for lt in range(Lt):
-                for h in range(H):
-                    sk_sol = solve(gk.K[(lt, h)], lam=lam)
-                    sv_sol = solve(gv.V[(lt, h)], lam=lam)
-                    mapper.set("K", lt, h, sk_sol.W, sk_sol.b, sk_sol.r2)
-                    mapper.set("V", lt, h, sv_sol.W, sv_sol.b, sv_sol.r2)
-                    r2s_k.append(sk_sol.r2)
-                    r2s_v.append(sv_sol.r2)
+        for lam, mapper in mappers.items():
+            mapper.check_compat(Ls, Lt, H, D)
             out = outdir / f"mapper_{name}_lam{lam}.pt"
             torch.save(mapper.state_dict(), out)
-            mk = sum(r2s_k) / len(r2s_k)
-            mv = sum(r2s_v) / len(r2s_v)
-            print(f"  lam={lam}: mean R^2  K={mk:.3f}  V={mv:.3f}  -> {out.name}")
-        free(gk, gv)
+            print(f"  lam={lam}: mean R^2  K={mapper.mean_r2('K'):.3f}  "
+                  f"V={mapper.mean_r2('V'):.3f}  -> {out.name}")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,51 @@
+# Qwen3-14B -> Qwen3-32B: the paper's best pair (Table 2: 97.6% average retention at
+# k=8). Running it checks this implementation against published numbers.
+#
+# Matched-KV: 8 KV heads x head_dim 128, rope_theta 1e6, shared tokenizer. Depths
+# differ (40 -> 64 layers), so every layer-alignment path is proportional here.
+#
+# Hardware: one 80 GB GPU (H100/A100-80GB). Qwen3-32B in bf16 is ~64 GB and the two
+# models are never resident together. Disk: ~55 GB for the calibration stores plus
+# eval.store_budget_gb for benchmark rounds; point runtime.store_dir at a big volume.
+source: Qwen/Qwen3-14B
+target: Qwen/Qwen3-32B
+output_dir: results/qwen3_14b_to_32b
+
+calibration:
+  dataset: fineweb-edu
+  n_seqs: 500          # paper: 500 sequences
+  seq_len: 1024        # paper: 1024 tokens
+  stride: 4            # ~128K tokens, the paper's calibration size
+  seed: 0
+
+runtime:
+  chunk: 25            # sequences per store shard
+  batch_size: 4
+  dtype: bfloat16      # Qwen3's native dtype; fp16 risks overflow at 32B
+  store_dtype: float16 # KV on disk; capture refuses non-finite values
+  device: cuda
+  store_dir: results/kv
+
+probe:
+  gram_dtype: float32
+  gram_device: cuda    # ~2.7 GB for the 40x64x8 grid
+  rope_diagonal_only: true
+
+fit:
+  lambdas: [0.001, 0.01, 0.1]   # paper: 0.01 (see note in README on lambda scaling)
+  k_sweep: [1, 4, 8, 12]        # paper's reported setting for this pair: k=8
+  max_gram_gb: 40               # fp64 Grams per target-layer group
+  gram_device: cuda
+
+eval:
+  wikitext_seqs: 64
+  prefix_len: 512
+  store_budget_gb: 60           # source KV per benchmark round (14B: ~160 KB/token)
+  # The paper's five benchmarks. Prompts follow lm-evaluation-harness defaults; the
+  # paper does not state its shot counts, so check these against it before comparing.
+  tasks:
+    arc_challenge: {num_fewshot: 0}
+    hellaswag: {num_fewshot: 0}
+    winogrande: {num_fewshot: 0}
+    mmlu: {num_fewshot: 0}
+    gsm8k: {num_fewshot: 5, max_new_tokens: 256}
