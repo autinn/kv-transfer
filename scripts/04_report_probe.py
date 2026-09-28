@@ -99,7 +99,7 @@ def main():
         print("  clearly non-trivial. Worth fitting top-k mappers to see how much")
         print("  multi-source selection recovers.")
     else:
-        print("\n  Comparable to the paper. The method appears to hold at sub-2B scale.")
+        print("\n  Comparable to the paper's best pair.")
 
 
 if __name__ == "__main__":

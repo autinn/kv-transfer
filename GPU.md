@@ -47,7 +47,7 @@ they load on CPU without a device_map.
 uv pip install accelerate      # got 1.15.0; installing it keeps torch 2.11.0+cu128
 ```
 
-(Repo fix: add `"accelerate>=0.26"` to `dependencies` in `pyproject.toml`.)
+(Now in `pyproject.toml`'s `dependencies`, so `uv pip install -e ".[dev]"` installs it.)
 
 ## 4. A10 configs: `configs/*.a10.yaml`
 
@@ -115,9 +115,30 @@ fit's CPU time dropped from 168 s to 15 s.
 built `torch.eye(D, dtype=f64)` with no device. With GPU Grams the probe then crashes
 at the solve step: "Expected all tensors to be on the same device ... cuda:0 and cpu".
 `configs/qwen3_14b_to_32b.yaml` sets `probe.gram_device: cuda`, so it hits the same
-crash. Fixed locally (not committed):
+crash. Fixed and committed (`b26df04`); for reference, the fix was:
 
 ```bash
 sed -i 's/eye = torch.eye(D, dtype=f64)$/eye = torch.eye(D, dtype=f64, device=cxx.device)/' \
     src/kvtransfer/batched_gram.py
 ```
+
+## 5. H100 (80 GB): Qwen3-14B -> 32B
+
+Validated 2026-09-28 on an H100 PCIe with the same driver (570.148.08, CUDA 12.8), so
+steps 1-2 above apply as written. See REPORT4.md.
+
+- `configs/qwen3_14b_to_32b_replication.yaml` runs unchanged: batch 4, chunk 25, GPU
+  Grams, `max_gram_gb: 40`.
+- Download both models' weights in parallel before or while the probe starts
+  (`hf download Qwen/Qwen3-14B` and `Qwen/Qwen3-32B`, ~90 GB, ~100 MB/s combined here).
+  The probe waits on the files and starts capturing 14B as soon as it lands.
+- Timings: calibration capture ~3 min (14B) and ~3.5 min (32B); probe 12.6 min
+  including the download wait; **k=8 fit ~35 s** (the H100's fp64 rate removes the A10's
+  fit bottleneck); HellaSwag ~12-14 min per configuration across both rounds; WikiText-2
+  perplexity ~2 min for 5 configurations.
+- Peak GPU memory is ~62 GB of 32B weights plus the scoring batch. With
+  `score_batch_tokens: 8192`, standalone and oracle peaked at ~72-75 GB.
+- Benchmark capture is CPU-bound (~25 cores busy): fp32 KV is copied to the CPU per layer
+  and checked, converted and saved there.
+- `store_budget_gb: 60` gives HellaSwag 2 rounds. With ~1 TB of disk free, 100 would give
+  1 round and save one 14B/32B reload.
