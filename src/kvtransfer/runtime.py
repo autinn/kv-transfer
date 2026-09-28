@@ -80,8 +80,8 @@ class LazyModel:
 
     def release(self):
         if self._model is not None:
-            m, self._model = self._model, None
-            free(m)
+            self._model = None       # drop our reference before collecting
+            free()
 
 
 def rope_theta(cfg) -> float:

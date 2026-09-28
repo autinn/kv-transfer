@@ -191,6 +191,7 @@ def main():
                         store_dir(cfg, ROOT) / slug(cfg["source"])
                         / f"task_{name}_{len(et.requests)}_{seg[0]}-{seg[-1]}",
                         stride=1, shard_size=rt.get("chunk", 16),
+                        batch_size=rt.get("batch_size", 1),
                         store_dtype=rt.get("store_dtype", "float16"),
                     )
             finally:
@@ -227,6 +228,9 @@ def main():
                     print(f"  {conf:24s} {name:14s} {et.metric} = {res[et.metric]:.4f}")
                 print(f"    ({time.time()-t:.0f}s)", flush=True)
         finally:
+            # Drop every local reference to the target (the oracle generator holds one
+            # too), or release() cannot free it and the next round's source load OOMs.
+            model = contents = None
             lazy.release()
             if not keep:
                 for st in stores.values():
