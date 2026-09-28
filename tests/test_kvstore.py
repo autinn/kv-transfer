@@ -132,3 +132,18 @@ def test_torn_manifest_is_treated_as_absent(tmp_path):
     (tmp_path / "manifest.json").write_text("{not json")
     assert KVStore(tmp_path).manifest() is None
     assert not KVStore(tmp_path).is_complete()
+
+
+def test_padded_batches_match_one_item_at_a_time(tiny_pair, tmp_path):
+    """Variable-length items batched with right-padding store the same KV as batch 1."""
+    src, _ = tiny_pair
+    g = torch.Generator().manual_seed(1)
+    items = [torch.randint(2, 90, (n,), generator=g) for n in (3, 11, 7, 7, 2, 9)]
+    for stride in (1, 2):
+        a, _ = _build(src, items, tmp_path / f"a{stride}", stride=stride, shard_size=4,
+                      batch_size=1, store_dtype="float32")
+        b, _ = _build(src, items, tmp_path / f"b{stride}", stride=stride, shard_size=4,
+                      batch_size=4, store_dtype="float32")
+        for (ka, va), (kb, vb) in zip(a.iter_items(), b.iter_items()):
+            assert ka.shape == kb.shape
+            assert torch.allclose(ka, kb, atol=1e-5) and torch.allclose(va, vb, atol=1e-5)

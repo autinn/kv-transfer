@@ -31,7 +31,8 @@ class KVCapture:
         v = cap.values[layer]
     """
 
-    def __init__(self, model, layers: list[int] | None = None, store_dtype=torch.float16):
+    def __init__(self, model, layers: list[int] | None = None, store_dtype=torch.float16,
+                 device="cpu"):
         self.model = model
         cfg = model.config
         self.n_layers = cfg.num_hidden_layers
@@ -39,6 +40,7 @@ class KVCapture:
         self.head_dim = getattr(cfg, "head_dim", cfg.hidden_size // cfg.num_attention_heads)
         self.layers = list(range(self.n_layers)) if layers is None else sorted(layers)
         self.store_dtype = store_dtype
+        self.device = device          # where captured tensors are kept
         self.keys: dict[int, torch.Tensor] = {}
         self.values: dict[int, torch.Tensor] = {}
         self._handles: list = []
@@ -50,14 +52,14 @@ class KVCapture:
     def _k_hook(self, idx: int):
         def hook(_mod, _inp, out):
             # (b, seq, kv_heads, head_dim) -> (b, kv_heads, seq, head_dim)
-            self.keys[idx] = out.detach().transpose(1, 2).to(self.store_dtype).cpu()
+            self.keys[idx] = out.detach().transpose(1, 2).to(self.device, self.store_dtype)
         return hook
 
     def _v_hook(self, idx: int):
         def hook(_mod, _inp, out):
             b, s, _ = out.shape
             v = out.detach().view(b, s, self.kv_heads, self.head_dim).transpose(1, 2)
-            self.values[idx] = v.to(self.store_dtype).cpu()
+            self.values[idx] = v.to(self.device, self.store_dtype)
         return hook
 
     def __enter__(self) -> "KVCapture":

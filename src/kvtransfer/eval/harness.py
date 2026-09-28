@@ -121,13 +121,24 @@ def standalone_contents(n: int) -> Iterator[None]:
 
 
 @torch.no_grad()
-def oracle_contents(model, contexts: list[list[int]]) -> Iterator[tuple[list, list]]:
-    """The target's own content-space KV for each prefix, through the graft path."""
+def oracle_contents(model, contexts: list[list[int]], batch: int = 16) -> Iterator[tuple[list, list]]:
+    """The target's own content-space KV for each prefix, through the graft path.
+
+    Prefixes are prefilled `batch` at a time, right-padded (causal attention keeps each
+    prefix's KV independent of the padding after it), and yielded one at a time.
+    """
     dev = input_device(model)
-    for ctx in contexts:
-        with KVCapture(model, store_dtype=torch.float32) as cap:
-            model(input_ids=torch.tensor([ctx[:-1]], device=dev), use_cache=False)
-            yield [cap.keys[l] for l in cap.layers], [cap.values[l] for l in cap.layers]
+    for j in range(0, len(contexts), batch):
+        pre = [ctx[:-1] for ctx in contexts[j : j + batch]]
+        ids = torch.zeros(len(pre), max(len(p) for p in pre), dtype=torch.long)
+        for r, p in enumerate(pre):
+            ids[r, : len(p)] = torch.tensor(p)
+        with KVCapture(model, store_dtype=torch.float32, device=dev) as cap:
+            model(input_ids=ids.to(dev), use_cache=False)
+        for r, p in enumerate(pre):
+            n = len(p)
+            yield ([cap.keys[l][r : r + 1, :, :n] for l in cap.layers],
+                   [cap.values[l][r : r + 1, :, :n] for l in cap.layers])
 
 
 def mapped_contents(mapper, store, contexts: list[list[int]]) -> Iterator[tuple[list, list]]:
@@ -158,35 +169,83 @@ def _cache_for(model, content, batch: int):
 @torch.no_grad()
 def score_continuations(model, ctx: list[int], conts: list[list[int]], content=None,
                         pad_id: int = 0) -> list[float]:
-    """Summed log-probability of each continuation after `ctx`, in one batched forward.
+    """Summed log-probability of each continuation after `ctx`, in one batched forward."""
+    return score_batch(model, [(ctx, conts, content)], pad_id)[0]
 
-    Rows are right-padded; with causal attention, padding after a row's last real token
-    cannot affect that row's scored positions.
+
+@torch.no_grad()
+def score_batch(model, items: list[tuple], pad_id: int = 0) -> list[list[float]]:
+    """`score_continuations` for several (ctx, conts, content) items in one forward.
+
+    Every continuation of every item is one row. Rows are right-padded; with causal
+    attention, padding after a row's last real token cannot affect its scored positions.
+
+    With transferred content, each item's prefix KV (length P_i) is right-padded to the
+    longest prefix P and the rows run on top of it. A padding mask hides the prefix
+    padding, and position ids P_i + j give each row's tokens their true positions, so
+    RoPE sees exactly the geometry of an unpadded run: prefix keys are rotated at 0..P_i-1
+    and the row's own tokens at P_i.. regardless of which cache slot they occupy.
     """
     dev = input_device(model)
-    B = len(conts)
-    if content is None:
-        rows = [ctx + c for c in conts]
-        first = len(ctx) - 1                         # position predicting cont[0]
-    else:
-        rows = [[ctx[-1]] + c for c in conts]
-        first = 0
-    T = max(len(r) for r in rows)
-    ids = torch.full((B, T), pad_id, dtype=torch.long)
+    cached = items[0][2] is not None
+    if any((it[2] is not None) != cached for it in items):
+        raise ValueError("cannot mix standalone and transferred items in one batch")
+    rows, firsts, conts_all = [], [], []
+    for ctx, conts, _ in items:
+        for c in conts:
+            rows.append(ctx + c if not cached else [ctx[-1]] + c)
+            firsts.append(len(ctx) - 1 if not cached else 0)   # position predicting c[0]
+            conts_all.append(c)
+    N, T = len(rows), max(len(r) for r in rows)
+    ids = torch.full((N, T), pad_id, dtype=torch.long)
     for i, r in enumerate(rows):
         ids[i, : len(r)] = torch.tensor(r)
-    keep = T - first                                  # only materialize logits we score
-    if content is None:
-        out = model(input_ids=ids.to(dev), use_cache=False, logits_to_keep=keep)
-    else:
-        out = model(input_ids=ids.to(dev), past_key_values=_cache_for(model, content, B),
-                    use_cache=True, logits_to_keep=keep)
-    logp = torch.log_softmax(out.logits.float(), dim=-1)     # (B, keep, V)
-    scores = []
-    for i, c in enumerate(conts):
-        tgt = torch.tensor(c, device=logp.device)
-        scores.append(float(logp[i, : len(c)].gather(-1, tgt[:, None]).sum()))
-    return scores
+    kw = {"use_cache": False}
+    if cached:
+        _, _, D = kv_dims(model.config)
+        plens = [it[2][0][0].shape[2] for it in items]
+        P = max(plens)
+        reps = [len(it[1]) for it in items]
+
+        def stack(xs_per_item):                   # per item (1, H, P_i, D) -> (N, H, P, D)
+            out = []
+            for x, n, pl in zip(xs_per_item, reps, plens):
+                x = x.to(dev)
+                if pl < P:
+                    x = torch.nn.functional.pad(x, (0, 0, 0, P - pl))
+                out.append(x.expand(n, *x.shape[1:]))
+            return torch.cat(out)
+
+        n_layers = len(items[0][2][0])
+        keys = [stack([it[2][0][l] for it in items]) for l in range(n_layers)]
+        values = [stack([it[2][1][l] for it in items]) for l in range(n_layers)]
+        cache = build_cache(keys, values, D, rope_theta(model.config),
+                            dtype=model.dtype, device=dev, config=model.config)
+        kw = {"use_cache": True, "past_key_values": cache}
+        if len(set(plens)) > 1:
+            row_plen = torch.tensor([pl for pl, n in zip(plens, reps) for _ in range(n)])
+            mask = torch.zeros(N, P + T, dtype=torch.long)
+            mask[:, P:] = 1
+            mask[:, :P] = (torch.arange(P)[None] < row_plen[:, None]).long()
+            kw["attention_mask"] = mask.to(dev)
+            kw["position_ids"] = (row_plen[:, None] + torch.arange(T)[None]).to(dev)
+    hidden = model.model(input_ids=ids.to(dev), **kw).last_hidden_state   # (N, T, H)
+    ri = torch.tensor([i for i, c in enumerate(conts_all) for _ in c], device=dev)
+    pi = torch.tensor([f + j for f, c in zip(firsts, conts_all) for j in range(len(c))], device=dev)
+    tg = torch.tensor([t for c in conts_all for t in c], device=dev)
+    sel = hidden[ri, pi]
+    tok_lp = torch.cat([                              # chunked: (tokens, vocab) fp32 is big
+        torch.log_softmax(model.lm_head(sel[a : a + 1024]).float(), dim=-1)
+        .gather(-1, tg[a : a + 1024, None])[:, 0]
+        for a in range(0, len(sel), 1024)
+    ])
+    per_row = torch.zeros(N, dtype=torch.float64, device=dev).index_add_(0, ri, tok_lp.double())
+    per_row = per_row.tolist()
+    out, i = [], 0
+    for _, conts, _ in items:
+        out.append(per_row[i : i + len(conts)])
+        i += len(conts)
+    return out
 
 
 @torch.no_grad()
@@ -249,28 +308,49 @@ def gold_answer(answer: str) -> str:
 
 
 def score_contexts(model, tok, task: EncodedTask, ctx_ids: list[int], contents: Iterator,
-                   log_every: int = 0) -> dict:
+                   log_every: int = 0, batch_tokens: int = 8192) -> dict:
     """Raw scores for a subset of a task's contexts, one prefix content per context.
 
     Returns {context index: [log-likelihood per request on that context]} for multiple
     choice, or {context index: generated text} for generation. Results for disjoint
     subsets merge with `dict.update`, which is what lets a large task be evaluated in
     disk-sized rounds and resumed.
+
+    Multiple-choice contexts are scored several per forward, up to about `batch_tokens`
+    padded row tokens (0 = one context per forward).
     """
     pad_id = tok.pad_token_id if tok.pad_token_id is not None else 0
     by_ctx = task_requests_by_context(task) if task.kind == "mc" else None
     out: dict[int, object] = {}
     n = 0
+    buf, buf_rows, buf_T = [], 0, 0
+
+    def flush():
+        nonlocal buf, buf_rows, buf_T
+        if buf:
+            for ci, s in zip([b[0] for b in buf], score_batch(model, [b[1] for b in buf], pad_id)):
+                out[ci] = s
+        buf, buf_rows, buf_T = [], 0, 0
+
     for ci, content in zip(ctx_ids, contents):
         n += 1
         if task.kind == "mc":
+            ctx = task.contexts[ci]
             conts = [task.requests[d][c][1] for d, c in by_ctx.get(ci, [])]
-            out[ci] = score_continuations(model, task.contexts[ci], conts, content, pad_id)
+            # A transferred row is short, but its prefix cache costs as much as the
+            # standalone row's context, so both are budgeted at context + continuation.
+            T = max(len(c) for c in conts) + len(ctx)
+            if buf and (buf_rows + len(conts)) * max(buf_T, T) > batch_tokens:
+                flush()
+            buf.append((ci, (ctx, conts, content)))
+            buf_rows += len(conts)
+            buf_T = max(buf_T, T)
         else:
             out[ci] = greedy_generate(model, tok, task.contexts[ci], content,
                                       task.gen.get("max_new_tokens", 256), task.gen.get("stop", ()))
         if log_every and n % log_every == 0:
             print(f"      {n}/{len(ctx_ids)} contexts", flush=True)
+    flush()
     if n != len(ctx_ids):
         raise ValueError(f"prefix provider yielded {n} contents for {len(ctx_ids)} contexts")
     return out

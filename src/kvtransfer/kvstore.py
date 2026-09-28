@@ -200,29 +200,33 @@ def build_store(
     t0 = time.time()
     for n, si in enumerate(todo):
         chunk = items[si * shard_size : (si + 1) * shard_size]
-        ks, vs = [], []
-        j = 0
-        while j < len(chunk):
-            # Batch consecutive equal-length items; variable-length ones go one at a time.
-            b = [chunk[j]]
-            while len(b) < batch_size and j + len(b) < len(chunk) and len(chunk[j + len(b)]) == len(b[0]):
-                b.append(chunk[j + len(b)])
-            j += len(b)
+        ks, vs = [None] * len(chunk), [None] * len(chunk)
+        # Batch items of similar length together, right-padded. With causal attention,
+        # padding after an item's last token cannot change that item's KV, so each item
+        # is sliced back to its own length. Stored order is the original item order.
+        order = sorted(range(len(chunk)), key=lambda i: -len(chunk[i]))
+        for j in range(0, len(order), batch_size):
+            b = order[j : j + batch_size]
+            lens = [len(chunk[i]) for i in b]
+            ids = torch.zeros(len(b), max(lens), dtype=torch.long)
+            for r, i in enumerate(b):
+                ids[r, : lens[r]] = chunk[i]
             with KVCapture(model, store_dtype=torch.float32) as cap:
-                model(input_ids=torch.stack(b).to(dev), use_cache=False)
+                model(input_ids=ids.to(dev), use_cache=False)
                 k, v = cap.stacked()                     # (L, B, H, S, D) fp32 on CPU
             k, v = subsample(k, stride), subsample(v, stride)
-            if not (torch.isfinite(k).all() and torch.isfinite(v).all()):
-                raise FloatingPointError(
-                    f"non-finite KV captured from {model_name}; run the model in "
-                    f"bfloat16 or float32 instead of {model.dtype}"
-                )
-            k, v = k.to(sdt), v.to(sdt)
-            if not (torch.isfinite(k).all() and torch.isfinite(v).all()):
-                raise FloatingPointError(f"KV overflows {store_dtype}; set runtime.store_dtype: bfloat16")
-            for i in range(len(b)):
-                ks.append(k[:, i].clone())
-                vs.append(v[:, i].clone())
+            for r, i in enumerate(b):
+                n_obs = -(-lens[r] // max(stride, 1))    # subsampled length of this item
+                ki, vi = k[:, r, :, :n_obs], v[:, r, :, :n_obs]
+                if not (torch.isfinite(ki).all() and torch.isfinite(vi).all()):
+                    raise FloatingPointError(
+                        f"non-finite KV captured from {model_name}; run the model in "
+                        f"bfloat16 or float32 instead of {model.dtype}"
+                    )
+                ki, vi = ki.to(sdt), vi.to(sdt)
+                if not (torch.isfinite(ki).all() and torch.isfinite(vi).all()):
+                    raise FloatingPointError(f"KV overflows {store_dtype}; set runtime.store_dtype: bfloat16")
+                ks[i], vs[i] = ki.clone(), vi.clone()
             cap.clear()
         path = store.shard_path(si)
         tmp = path.with_suffix(".pt.tmp")

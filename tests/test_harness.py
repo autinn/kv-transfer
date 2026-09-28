@@ -169,3 +169,38 @@ def test_fewshot_is_deterministic():
 def test_unknown_task():
     with pytest.raises(KeyError, match="unknown task"):
         T.load_task("nope")
+
+
+def _batch_task(ctxs, conts_per_ctx):
+    reqs = [[(ci, c, 0) for c in conts] for ci, conts in enumerate(conts_per_ctx)]
+    return EncodedTask(name="t", kind="mc", contexts=ctxs, requests=reqs, labels=[0] * len(reqs), metric="acc")
+
+
+@pytest.mark.parametrize("mode", ["standalone", "oracle", "store"])
+def test_batched_scoring_matches_one_context_at_a_time(tiny_pair, tmp_path, mode):
+    """Contexts of different lengths scored together (padded prefix caches, padding
+    mask, per-row positions) must give the per-context scores."""
+    _, tgt = tiny_pair
+    g = torch.Generator().manual_seed(0)
+    ctxs = [torch.randint(2, 90, (n,), generator=g).tolist() for n in (9, 23, 4, 17, 12)]
+    conts = [[torch.randint(2, 90, (m,), generator=g).tolist() for m in ms]
+             for ms in ([3, 1], [5, 2, 4], [1], [2, 6], [4, 4, 1, 3])]
+    task = _batch_task(ctxs, conts)
+    ids = list(range(len(ctxs)))
+
+    def contents():
+        if mode == "standalone":
+            return standalone_contents(len(ctxs))
+        if mode == "oracle":
+            return oracle_contents(tgt, ctxs, batch=3)
+        store = build_store(lambda: tgt, "tiny-t", tgt.config, [torch.tensor(c[:-1]) for c in ctxs],
+                            tmp_path / "s", store_dtype="float32", batch_size=4, log=lambda *_: None)
+        return mapped_contents(ZeroCopyMapper(3, 16, 2, 1e6, n_src_layers=3), store, ctxs)
+
+    tok = CharTokenizer()
+    one = score_contexts(tgt, tok, task, ids, contents(), batch_tokens=0)
+    many = score_contexts(tgt, tok, task, ids, contents(), batch_tokens=10_000)
+    ref = [score_continuations(tgt, c, cs) for c, cs in zip(ctxs, conts)]
+    for ci in ids:
+        assert many[ci] == pytest.approx(one[ci], abs=1e-4)
+        assert many[ci] == pytest.approx(ref[ci], abs=1e-4)

@@ -215,7 +215,8 @@ def main():
                 else:
                     mapper = (controls.get(conf) or mappers[conf]).to(dev)
                     contents = mapped_contents(mapper, stores[name], seg_ctx)
-                scored = score_contexts(model, tok, et, seg, contents, log_every=1000)
+                scored = score_contexts(model, tok, et, seg, contents, log_every=1000,
+                                        batch_tokens=int(ev.get("score_batch_tokens", 8192)))
                 if mapper is not None:
                     mapper.to("cpu")
                 raw.setdefault(conf, {}).setdefault(name, {}).update(scored)
