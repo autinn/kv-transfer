@@ -1,0 +1,14 @@
+{
+  "target_standalone": 7.607898235321045,
+  "oracle_graft": 7.603410243988037,
+  "mapper_k8_lam0.01": 8.983381271362305,
+  "zero_copy": 46.61129379272461,
+  "mean_pred": 138.0723419189453,
+  "retention_pct": {
+    "target_standalone": 100.0,
+    "oracle_graft": 100.02908839068203,
+    "mapper_k8_lam0.01": 92.43002703220219,
+    "zero_copy": 52.81806203301927,
+    "mean_pred": 41.178540227978765
+  }
+}
