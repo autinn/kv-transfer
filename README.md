@@ -210,6 +210,18 @@ runs every stage on the real small pair at laptop scale; `selftest_0.6b.yaml` ru
 > saved mapper recorded only the key selection, so value maps were applied to the wrong
 > source layers at eval time. Loading such a mapper now warns.
 
+### Feature width: same-head vs. all-heads
+
+By default each target head is mapped from the *same-numbered* source head only
+(`k·head_dim` inputs). The paper's method section states the feature vector instead
+concatenates *all* source KV heads of each selected layer (`k·kv_heads·head_dim`
+inputs), "enabling cross-head information flow" — matching its quoted mapper parameter
+counts. Pass `--all-heads` to `03_fit.py` to fit that wider mapper (`stream.TopKGrams`
+and `mapper.KVMapper` both take `all_heads=True`); it is not the default because it
+costs more Gram memory and was added after REPORT3/REPORT4 both found the same
+multi-layer R² shortfall at very different model scales, which points at this feature
+difference rather than scale. See `NEXT_STEPS.md` for the comparison still to run.
+
 ### Expected runtime
 
 | Hardware | 500 sequences | 100 sequences |

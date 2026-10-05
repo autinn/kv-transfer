@@ -41,6 +41,7 @@ class KVMapper:
         rope_theta_target: float,
         n_src_layers: int | None = None,
         src_layers_v: dict[int, list[int]] | None = None,
+        all_heads: bool = False,
     ):
         self.src_layers = {int(k): list(v) for k, v in src_layers.items()}
         # Values may read different source layers than keys: top-k selection ranks K
@@ -57,6 +58,11 @@ class KVMapper:
         # Recorded so a mapper fitted for one pair is refused on another; None for
         # mappers saved before this field existed.
         self.n_src_layers = n_src_layers
+        # When True, every target head's feature vector concatenates ALL source KV
+        # heads of each selected layer (k*kv_heads*head_dim inputs), matching the
+        # paper's stated construction, instead of only the same-numbered source head
+        # (k*head_dim). See stream.TopKGrams for the matching Stage B feature code.
+        self.all_heads = all_heads
         self.K: dict[tuple[int, int], HeadMap] = {}
         self.V: dict[tuple[int, int], HeadMap] = {}
         self.device = torch.device("cpu")
@@ -95,6 +101,21 @@ class KVMapper:
                    if (lt, h) not in self.K or (lt, h) not in self.V]
         if missing:
             problems.append(f"{len(missing)} (layer, head) maps missing, e.g. {missing[0]}")
+        else:
+            # Catch a W fitted for one feature width (same-head vs all-heads) being
+            # applied under the other -- map_content would otherwise fail deep inside
+            # a matmul with a confusing shape-mismatch error.
+            mult = self.kv_heads if self.all_heads else 1
+            for name, sel, store in (("K", self.src_layers, self.K), ("V", self.src_layers_v, self.V)):
+                for lt, srcs in sel.items():
+                    expected = len(srcs) * head_dim * mult
+                    got = store[(lt, 0)].W.shape[0]
+                    if got != expected:
+                        problems.append(
+                            f"{name} map at target layer {lt} has {got} input features, "
+                            f"expected {expected} (all_heads={self.all_heads})"
+                        )
+                        break
         if problems:
             raise ValueError("mapper does not fit this model pair: " + "; ".join(problems))
 
@@ -125,10 +146,15 @@ class KVMapper:
             B, H, S, D = sk[srcs[0]].shape
             ks = torch.empty(B, H, S, D, dtype=torch.float32, device=dev)
             vs = torch.empty(B, H, S, D, dtype=torch.float32, device=dev)
+            # All-heads features don't depend on the target head, so build them once
+            # per target layer -- matches stream.TopKGrams.update's fitting-time shape.
+            if self.all_heads:
+                xk_all = torch.cat([sk[ls][:, h2] for ls in srcs for h2 in range(H)], dim=-1)
+                xv_all = torch.cat([sv[ls][:, h2] for ls in srcs_v for h2 in range(H)], dim=-1)
             for h in range(H):
-                # (B, S, k*D): concatenate the chosen source layers for this head.
-                xk = torch.cat([sk[ls][:, h] for ls in srcs], dim=-1)
-                xv = torch.cat([sv[ls][:, h] for ls in srcs_v], dim=-1)
+                # (B, S, k*D) same-head, or (B, S, k*H*D) all-heads.
+                xk = xk_all if self.all_heads else torch.cat([sk[ls][:, h] for ls in srcs], dim=-1)
+                xv = xv_all if self.all_heads else torch.cat([sv[ls][:, h] for ls in srcs_v], dim=-1)
                 mk, mv = self.K[(lt, h)], self.V[(lt, h)]
                 ks[:, h] = xk @ mk.W + mk.b
                 vs[:, h] = xv @ mv.W + mv.b
@@ -156,6 +182,7 @@ class KVMapper:
                 "kv_heads": self.kv_heads, "rope_theta_target": self.rope_theta_target,
                 "n_src_layers": self.n_src_layers,
                 "src_layers_v": self.src_layers_v,
+                "all_heads": self.all_heads,
             }
         }
         for name, store in (("K", self.K), ("V", self.V)):
@@ -176,6 +203,7 @@ class KVMapper:
         o = KVMapper(
             m["src_layers"], m["head_dim"], m["kv_heads"], m["rope_theta_target"],
             n_src_layers=m.get("n_src_layers"), src_layers_v=m.get("src_layers_v"),
+            all_heads=m.get("all_heads", False),
         )
         for key, val in sd.items():
             if key == "meta":

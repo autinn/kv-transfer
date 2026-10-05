@@ -108,9 +108,17 @@ class SingleSourceGrams:
 class TopKGrams:
     """Stage B: production Grams over a chosen top-k source-layer set per target layer.
 
-    `src_layers[lt]` lists the source layers feeding target layer lt, so the feature
-    vector for target (lt, h) is the concatenation of those source layers' head-h
-    vectors -- the paper's X^l = [K_s^(l1) || ... || K_s^(lk)].
+    `src_layers[lt]` lists the source layers feeding target layer lt. By default the
+    feature vector for target (lt, h) concatenates those source layers' head-h vectors
+    only -- the paper's X^l = [K_s^(l1) || ... || K_s^(lk)] read literally as one source
+    head per target head.
+
+    `all_heads=True` instead concatenates *all* source KV heads of each selected layer
+    (d_in = k * kv_heads * head_dim), matching the paper's stated feature construction:
+    "the concatenation of all Key heads from source layer l_i," enabling cross-head
+    information flow. This is the feature width implied by the paper's quoted mapper
+    parameter counts; the default (same-numbered head only) is cheaper and was this
+    repo's original reading, now confirmed narrower than the paper's.
     """
 
     def __init__(
@@ -120,13 +128,15 @@ class TopKGrams:
         head_dim: int,
         device="cpu",
         kinds: tuple[str, ...] = ("K", "V"),
+        all_heads: bool = False,
     ):
         self.src_layers = {int(k): list(v) for k, v in src_layers.items()}
         self.kv_heads, self.head_dim = kv_heads, head_dim
         self.kinds = tuple(kinds)
+        self.all_heads = all_heads
         self.K, self.V = {}, {}
         for lt, srcs in self.src_layers.items():
-            d_in = len(srcs) * head_dim
+            d_in = len(srcs) * head_dim * (kv_heads if all_heads else 1)
             for h in range(kv_heads):
                 if "K" in self.kinds:
                     self.K[(lt, h)] = GramAccumulator(d_in, head_dim, device)
@@ -134,9 +144,11 @@ class TopKGrams:
                     self.V[(lt, h)] = GramAccumulator(d_in, head_dim, device)
 
     @staticmethod
-    def bytes_per_target_layer(k: int, kv_heads: int, head_dim: int, n_kinds: int = 2) -> int:
+    def bytes_per_target_layer(
+        k: int, kv_heads: int, head_dim: int, n_kinds: int = 2, all_heads: bool = False
+    ) -> int:
         """fp64 accumulator footprint of one target layer, for grouping under a budget."""
-        d_in = k * head_dim
+        d_in = k * head_dim * (kv_heads if all_heads else 1)
         per = d_in * d_in + d_in * head_dim + d_in + 2 * head_dim
         return 8 * per * kv_heads * n_kinds
 
@@ -146,18 +158,25 @@ class TopKGrams:
         sk, sv = _per_head(src_k), _per_head(src_v)
         tk, tv = _per_head(tgt_k), _per_head(tgt_v)
         for lt, srcs in self.src_layers.items():
-            for h in range(self.kv_heads):
-                # concat chosen source layers along the feature dim -> (N, k*D)
+            # All-heads features don't depend on the target head, so build them once
+            # per target layer rather than once per (target layer, head).
+            if self.all_heads:
                 if "K" in self.kinds:
-                    xk = torch.cat([sk[ls, h] for ls in srcs], dim=-1)
+                    xk_all = torch.cat([sk[ls, h2] for ls in srcs for h2 in range(self.kv_heads)], dim=-1)
+                if "V" in self.kinds:
+                    xv_all = torch.cat([sv[ls, h2] for ls in srcs for h2 in range(self.kv_heads)], dim=-1)
+            for h in range(self.kv_heads):
+                if "K" in self.kinds:
+                    xk = xk_all if self.all_heads else torch.cat([sk[ls, h] for ls in srcs], dim=-1)
                     self.K[(lt, h)].update(xk, tk[lt, h])
                 if "V" in self.kinds:
-                    xv = torch.cat([sv[ls, h] for ls in srcs], dim=-1)
+                    xv = xv_all if self.all_heads else torch.cat([sv[ls, h] for ls in srcs], dim=-1)
                     self.V[(lt, h)].update(xv, tv[lt, h])
 
     def state_dict(self) -> dict:
         sd = {"meta": {"src_layers": self.src_layers, "kv_heads": self.kv_heads,
-                       "head_dim": self.head_dim, "kinds": list(self.kinds)}}
+                       "head_dim": self.head_dim, "kinds": list(self.kinds),
+                       "all_heads": self.all_heads}}
         for name, store in (("K", self.K), ("V", self.V)):
             for (lt, h), acc in store.items():
                 sd[f"{name}.{lt}.{h}"] = acc.state_dict()
@@ -166,7 +185,8 @@ class TopKGrams:
     @classmethod
     def from_state_dict(cls, sd: dict) -> "TopKGrams":
         m = sd["meta"]
-        o = cls(m["src_layers"], m["kv_heads"], m["head_dim"], kinds=tuple(m.get("kinds", ("K", "V"))))
+        o = cls(m["src_layers"], m["kv_heads"], m["head_dim"], kinds=tuple(m.get("kinds", ("K", "V"))),
+                all_heads=m.get("all_heads", False))
         for key, val in sd.items():
             if key == "meta":
                 continue

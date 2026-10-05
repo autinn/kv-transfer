@@ -263,11 +263,20 @@ paper's reported R² for this pair:
 **Full check**: `07_eval_tasks.py` retention on the five benchmarks against the paper's
 97.6% average at k = 8 (HellaSwag 80.70 absolute at k = 8, 44.81 at k = 1).
 
-Two known differences from the paper to settle before comparing:
+Two known differences from the paper:
 
-1. **Features per target head.** This repo maps target head *h* from the same head *h*
-   in each selected source layer (k·128 inputs). The paper's quoted mapper sizes (3.36B
-   parameters for Llama 8B→70B at k = 20) match target heads reading *all 8* source
-   heads (k·8·128 inputs). Confirm in the paper's method section; if so, add that mode.
+1. **Features per target head — confirmed against the paper's text, now implemented.**
+   The default still maps target head *h* from the same head *h* in each selected
+   source layer (k·128 inputs). The paper's method section states the feature vector is
+   "the concatenation of all Key heads from source layer *l_i*," i.e. k·8·128 inputs,
+   explicitly "enabling cross-head information flow" — matching its quoted mapper sizes
+   (3.36B parameters for Llama 8B→70B at k = 20). This is now available as
+   `--all-heads` on `scripts/03_fit.py` (see `stream.TopKGrams` and `mapper.KVMapper`,
+   both take `all_heads=True`). REPORT3 and REPORT4 both found the same shortfall at
+   two very different scales (k=1→k=8 R² gain of +0.11–0.12 here vs. the paper's +0.23),
+   which rules out scale as the explanation and makes this the leading candidate fix —
+   not yet run; refit at k=8 with `--all-heads` on the already-captured 14B→32B store
+   and compare against REPORT4's numbers.
 2. **λ scaling.** `ridge.py` multiplies λ by the mean feature variance, so λ = 0.01 here
-   is not the paper's λ = 0.01.
+   is not the paper's λ = 0.01. Less likely to explain the multi-layer gap now that this
+   repo's k=1 R² already matches the paper's closely under the current scaling.

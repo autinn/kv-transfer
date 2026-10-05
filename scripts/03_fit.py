@@ -31,16 +31,16 @@ from kvtransfer.stream import TopKGrams
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def layer_groups(sel_k, sel_v, H, D, budget_bytes) -> list[list[int]]:
+def layer_groups(sel_k, sel_v, H, D, budget_bytes, all_heads: bool = False) -> list[list[int]]:
     """Split target layers into groups whose Grams fit under the budget."""
     same = sel_k == sel_v
     groups, cur, used = [], [], 0
     for lt in sorted(sel_k):
         if same:
-            need = TopKGrams.bytes_per_target_layer(len(sel_k[lt]), H, D, n_kinds=2)
+            need = TopKGrams.bytes_per_target_layer(len(sel_k[lt]), H, D, n_kinds=2, all_heads=all_heads)
         else:
-            need = (TopKGrams.bytes_per_target_layer(len(sel_k[lt]), H, D, n_kinds=1)
-                    + TopKGrams.bytes_per_target_layer(len(sel_v[lt]), H, D, n_kinds=1))
+            need = (TopKGrams.bytes_per_target_layer(len(sel_k[lt]), H, D, n_kinds=1, all_heads=all_heads)
+                    + TopKGrams.bytes_per_target_layer(len(sel_v[lt]), H, D, n_kinds=1, all_heads=all_heads))
         if cur and used + need > budget_bytes:
             groups.append(cur)
             cur, used = [], 0
@@ -60,6 +60,10 @@ def main():
     ap.add_argument("--k", type=int, nargs="+", default=None, help="default: fit.k_sweep")
     ap.add_argument("--identity-baseline", action="store_true",
                     help="also fit the layer-aligned single-source baseline")
+    ap.add_argument("--all-heads", action="store_true",
+                    help="feature = all source KV heads per selected layer (k*kv_heads*head_dim), "
+                         "matching the paper's stated construction, instead of the same-numbered "
+                         "source head only (k*head_dim, this repo's original default)")
     ap.add_argument("--outdir", default=None, help="default: <output_dir>/mappers")
     args = ap.parse_args()
 
@@ -108,11 +112,13 @@ def main():
         print(f"\n=== fitting {name} ===")
         print(f"  sources per target layer: {sorted({len(v) for v in sel_k.values()})}")
         same_sel = sel_k == sel_v
-        groups = layer_groups(sel_k, sel_v, H, D, budget)
-        print(f"  {len(groups)} target-layer group(s) under {budget/1e9:.0f} GB")
+        groups = layer_groups(sel_k, sel_v, H, D, budget, all_heads=args.all_heads)
+        print(f"  {len(groups)} target-layer group(s) under {budget/1e9:.0f} GB"
+              + (" (all_heads)" if args.all_heads else ""))
         # The mapper must record BOTH selections: V maps fitted on sel_v's features are
         # meaningless if applied to sel_k's layers at inference.
-        mappers = {lam: KVMapper(sel_k, D, H, theta_t, n_src_layers=Ls, src_layers_v=sel_v)
+        mappers = {lam: KVMapper(sel_k, D, H, theta_t, n_src_layers=Ls, src_layers_v=sel_v,
+                                 all_heads=args.all_heads)
                    for lam in lams}
         if not same_sel:
             n_diff = sum(sel_k[lt] != sel_v[lt] for lt in sel_k)
@@ -120,9 +126,9 @@ def main():
         t0 = time.time()
         for gi, group in enumerate(groups):
             gk = TopKGrams({lt: sel_k[lt] for lt in group}, H, D, device=gdev,
-                           kinds=("K", "V") if same_sel else ("K",))
+                           kinds=("K", "V") if same_sel else ("K",), all_heads=args.all_heads)
             gv = gk if same_sel else TopKGrams({lt: sel_v[lt] for lt in group}, H, D,
-                                               device=gdev, kinds=("V",))
+                                               device=gdev, kinds=("V",), all_heads=args.all_heads)
             for sk, sv, tk, tv in paired_batches(src, tgt):
                 if gdev != "cpu":
                     sk, sv, tk, tv = (x.to(gdev) for x in (sk, sv, tk, tv))
@@ -140,9 +146,10 @@ def main():
             print(f"  group {gi+1}/{len(groups)} (target layers {group[0]}-{group[-1]}) "
                   f"{(time.time()-t0)/60:.1f}m", flush=True)
 
+        suffix = "_allheads" if args.all_heads else ""
         for lam, mapper in mappers.items():
             mapper.check_compat(Ls, Lt, H, D)
-            out = outdir / f"mapper_{name}_lam{lam}.pt"
+            out = outdir / f"mapper_{name}_lam{lam}{suffix}.pt"
             torch.save(mapper.state_dict(), out)
             print(f"  lam={lam}: mean R^2  K={mapper.mean_r2('K'):.3f}  "
                   f"V={mapper.mean_r2('V'):.3f}  -> {out.name}")
