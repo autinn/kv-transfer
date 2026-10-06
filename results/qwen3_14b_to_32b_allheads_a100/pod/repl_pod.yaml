@@ -1,0 +1,58 @@
+# Scoped-down variant of qwen3_14b_to_32b.yaml for one purpose: checking whether this
+# codebase reproduces the paper's own reported numbers for its best pair, as cheaply as
+# an 80 GB GPU allows. It answers "does the implementation replicate the paper here,"
+# not "what's the full k/lambda/task landscape" -- that's what the unscoped config is
+# for, and it's a separate, more expensive run.
+#
+# What's cut vs. qwen3_14b_to_32b.yaml, and why:
+#   - fit.lambdas: just the paper's 0.01, not the 3-way sweep. If it underperforms and
+#     you want to test the lambda-scaling hypothesis (README/NEXT_STEPS.md), that's a
+#     deliberate follow-up, not part of this run.
+#   - fit run with --k 8 only (paper's reported setting for this pair) instead of
+#     sweeping k_sweep here -- keep k_sweep as a record of what the full config would
+#     run, but pass --k 8 explicitly when fitting so the fp64 Cholesky solve (the
+#     dominant cost at high k per REPORT3) only runs once.
+#   - eval.tasks: HellaSwag only, matching the methodology REPORT3 used for the small
+#     pair, so the two reports are directly comparable. MMLU/GSM8K are also already
+#     shot-count-mismatched against the paper (see REPORT3 section 7), so they wouldn't
+#     be a clean comparison anyway even run in full.
+source: Qwen/Qwen3-14B
+target: Qwen/Qwen3-32B
+output_dir: results/qwen3_14b_to_32b
+
+calibration:
+  dataset: fineweb-edu
+  n_seqs: 500          # paper: 500 sequences
+  seq_len: 1024        # paper: 1024 tokens
+  stride: 4            # ~128K tokens, the paper's calibration size
+  seed: 0
+
+runtime:
+  chunk: 25            # sequences per store shard
+  batch_size: 4
+  dtype: bfloat16      # Qwen3's native dtype; fp16 risks overflow at 32B
+  store_dtype: float16 # KV on disk; capture refuses non-finite values
+  device: cuda
+  store_dir: /root/kv     # pod: local disk; /workspace quota is ~115 GB
+
+probe:
+  gram_dtype: float32
+  gram_device: cuda    # ~2.7 GB for the 40x64x8 grid
+  rope_diagonal_only: true
+
+fit:
+  lambdas: [0.01]                # paper's reported value; run --k 8 explicitly (see header)
+  k_sweep: [8]                   # paper's reported setting for this pair
+  max_gram_gb: 40                # fp64 Grams per target-layer group
+  gram_device: cuda
+
+eval:
+  wikitext_seqs: 64
+  prefix_len: 512
+  store_budget_gb: 50           # pod: 2 rounds, peak 50 GB on the 120 GB local disk
+                                # HellaSwag (~79 GB) in one round, saving a 14B/32B reload;
+                                # needs that much free disk (GPU.md section 5).
+  keep_stores: false            # pod: free each round after scoring
+  tasks:
+    hellaswag: {num_fewshot: 0}  # the paper's biggest k=1 -> k=8 swing (44.81 -> 80.70);
+                                  # matches the single benchmark REPORT3 ran on the small pair

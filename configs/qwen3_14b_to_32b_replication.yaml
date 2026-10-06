@@ -49,7 +49,10 @@ fit:
 eval:
   wikitext_seqs: 64
   prefix_len: 512
-  store_budget_gb: 60           # source KV per benchmark round (14B: ~160 KB/token)
+  store_budget_gb: 100          # source KV per benchmark round (14B: ~160 KB/token). 100 fits
+                                # HellaSwag (~79 GB) in one round, saving a 14B/32B reload;
+                                # needs that much free disk (GPU.md section 5).
+  keep_stores: true             # keep it for later evals of new mappers (no recapture)
   tasks:
     hellaswag: {num_fewshot: 0}  # the paper's biggest k=1 -> k=8 swing (44.81 -> 80.70);
                                   # matches the single benchmark REPORT3 ran on the small pair
