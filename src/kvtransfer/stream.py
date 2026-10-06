@@ -27,7 +27,7 @@ from dataclasses import dataclass
 import torch
 
 from .gram import GramAccumulator
-from .ridge import RidgeSolution, solve
+from .ridge import RidgeSolution, r2_from_stats, solve
 
 
 @dataclass
@@ -170,6 +170,17 @@ class TopKGrams:
         d_in = k * head_dim
         per = d_in * d_in + d_in * head_dim + d_in + 2 * head_dim
         return 8 * per * kv_heads * n_kinds
+
+    def heldout_r2_heads(self, kind: str, lt: int, sols: list[RidgeSolution]) -> list[torch.Tensor]:
+        """Per-head out-of-sample R^2 (per output dim) of `sols` on the data accumulated
+        here, which must be a held-out TopKGrams built with the same selection and mode."""
+        store = self.K if kind == "K" else self.V
+        if not self.all_heads:
+            return [r2_from_stats(store[(lt, h)], s.W, s.b) for h, s in enumerate(sols)]
+        D = self.head_dim
+        r2 = r2_from_stats(store[lt], torch.cat([s.W for s in sols], dim=1),
+                           torch.cat([s.b for s in sols]))
+        return [r2[h * D:(h + 1) * D] for h in range(self.kv_heads)]
 
     def solve_heads(self, kind: str, lt: int, lam: float) -> list[RidgeSolution]:
         """Per-head ridge solutions for target layer lt, in head order, either mode."""

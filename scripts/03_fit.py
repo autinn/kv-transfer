@@ -17,6 +17,7 @@ disk pass per group.
 from __future__ import annotations
 
 import argparse
+import json
 import time
 from pathlib import Path
 
@@ -65,6 +66,10 @@ def main():
                          "matching the paper's stated construction, instead of the same-numbered "
                          "source head only (k*head_dim, this repo's original default)")
     ap.add_argument("--outdir", default=None, help="default: <output_dir>/mappers")
+    ap.add_argument("--holdout-shards", type=int, default=0,
+                    help="fit on all but the last N calibration shards and report R^2 on those "
+                         "N as well (out-of-sample). Mappers get a _ho<N> suffix so the "
+                         "production mappers fitted on every shard are not overwritten")
     args = ap.parse_args()
 
     cfg = load_config(args.config)
@@ -108,6 +113,18 @@ def main():
     outdir = Path(args.outdir) if args.outdir else out_root / "mappers"
     outdir.mkdir(parents=True, exist_ok=True)
 
+    # Held-out shards are the last N of the store: whole sequences, so no token of a
+    # held-out sequence is ever in the fit. They need their own accumulators (same
+    # selection and mode), which doubles Gram memory per target layer.
+    n_ho = args.holdout_shards
+    n_shards = src.meta["n_shards"]
+    if not 0 <= n_ho < n_shards:
+        raise ValueError(f"--holdout-shards {n_ho}: store has {n_shards} shards")
+    if n_ho:
+        budget /= 2
+        print(f"  holding out the last {n_ho}/{n_shards} shards for out-of-sample R^2")
+    heldout, summary = {}, {}
+
     for name, (sel_k, sel_v) in selections.items():
         print(f"\n=== fitting {name} ===")
         print(f"  sources per target layer: {sorted({len(v) for v in sel_k.values()})}")
@@ -129,29 +146,59 @@ def main():
                            kinds=("K", "V") if same_sel else ("K",), all_heads=args.all_heads)
             gv = gk if same_sel else TopKGrams({lt: sel_v[lt] for lt in group}, H, D,
                                                device=gdev, kinds=("V",), all_heads=args.all_heads)
-            for sk, sv, tk, tv in paired_batches(src, tgt):
+            if n_ho:
+                hk = TopKGrams({lt: sel_k[lt] for lt in group}, H, D, device=gdev,
+                               kinds=("K", "V") if same_sel else ("K",), all_heads=args.all_heads)
+                hv = hk if same_sel else TopKGrams({lt: sel_v[lt] for lt in group}, H, D,
+                                                   device=gdev, kinds=("V",), all_heads=args.all_heads)
+            for si, (sk, sv, tk, tv) in enumerate(paired_batches(src, tgt)):
                 if gdev != "cpu":
                     sk, sv, tk, tv = (x.to(gdev) for x in (sk, sv, tk, tv))
-                gk.update(sk, sv, tk, tv)
+                ak, av = (hk, hv) if si >= n_shards - n_ho else (gk, gv)
+                ak.update(sk, sv, tk, tv)
                 if not same_sel:
-                    gv.update(sk, sv, tk, tv)
+                    av.update(sk, sv, tk, tv)
             for lam in lams:
                 for lt in group:
                     k_sols, v_sols = gk.solve_heads("K", lt, lam), gv.solve_heads("V", lt, lam)
                     for h in range(H):
                         mappers[lam].set("K", lt, h, k_sols[h].W, k_sols[h].b, k_sols[h].r2)
                         mappers[lam].set("V", lt, h, v_sols[h].W, v_sols[h].b, v_sols[h].r2)
+                    if n_ho:
+                        for kind, g, sols in (("K", hk, k_sols), ("V", hv, v_sols)):
+                            heldout.setdefault((lam, kind), []).extend(
+                                float(r.mean()) for r in g.heldout_r2_heads(kind, lt, sols))
             del gk, gv
+            if n_ho:
+                del hk, hv
             print(f"  group {gi+1}/{len(groups)} (target layers {group[0]}-{group[-1]}) "
                   f"{(time.time()-t0)/60:.1f}m", flush=True)
 
-        suffix = "_allheads" if args.all_heads else ""
+        suffix = ("_allheads" if args.all_heads else "") + (f"_ho{n_ho}" if n_ho else "")
         for lam, mapper in mappers.items():
             mapper.check_compat(Ls, Lt, H, D)
             out = outdir / f"mapper_{name}_lam{lam}{suffix}.pt"
             torch.save(mapper.state_dict(), out)
-            print(f"  lam={lam}: mean R^2  K={mapper.mean_r2('K'):.3f}  "
-                  f"V={mapper.mean_r2('V'):.3f}  -> {out.name}")
+            line = (f"  lam={lam}: mean R^2  K={mapper.mean_r2('K'):.3f}  "
+                    f"V={mapper.mean_r2('V'):.3f}")
+            if n_ho:
+                hk_r2 = sum(heldout[(lam, "K")]) / len(heldout[(lam, "K")])
+                hv_r2 = sum(heldout[(lam, "V")]) / len(heldout[(lam, "V")])
+                line += f"  | held-out K={hk_r2:.3f}  V={hv_r2:.3f}"
+                summary[out.stem] = {"k": name, "lam": lam, "all_heads": args.all_heads,
+                                     "holdout_shards": n_ho, "n_shards": n_shards,
+                                     "train_r2_k": mapper.mean_r2("K"), "train_r2_v": mapper.mean_r2("V"),
+                                     "heldout_r2_k": hk_r2, "heldout_r2_v": hv_r2}
+            print(line + f"  -> {out.name}")
+        heldout.clear()
+
+    if n_ho:
+        # Merged into one file across runs (same-head and all-heads are separate calls).
+        path = out_root / "heldout_r2.json"
+        merged = json.loads(path.read_text()) if path.exists() else {}
+        merged.update(summary)
+        path.write_text(json.dumps(merged, indent=2))
+        print(f"\nsaved -> {path}")
 
 
 if __name__ == "__main__":

@@ -79,20 +79,10 @@ GPU = "L4"            # cheapest tier that comfortably fits this pair; see READM
 TIMEOUT_S = 90 * 60
 
 
-@app.function(
-    image=image,
-    gpu=GPU,
-    volumes={"/cache": volume},
-    timeout=TIMEOUT_S,
-)
-def run_all_heads_check(eval_only: bool = False, k: int = 1):
-    """eval_only=True skips probe + fit and resumes the eval: 07_eval_tasks.py skips
-    configs already in results/eval_tasks.json and reuses the HellaSwag source KV store
-    left on the volume, so only the unfinished configs are scored.
-
-    `k` is the number of source layers per target layer for the --all-heads fit. The
-    probe is skipped when its output is already on the volume (03_fit.py only reads its
-    top-k selection, which does not depend on k)."""
+def _container_setup():
+    """Inside the container: point results/ at the volume, run the fast tests, and return
+    a `run(*argv)` helper that streams a subprocess and raises on a non-zero exit."""
+    import os
     import subprocess
     import sys
     import time
@@ -108,12 +98,11 @@ def run_all_heads_check(eval_only: bool = False, k: int = 1):
     def run(*args, **kw):
         print(f"\n$ {' '.join(args)}", flush=True)
         t0 = time.time()
-        r = subprocess.run(args, cwd="/repo", env={**__import__("os").environ, **env}, **kw)
+        r = subprocess.run(args, cwd="/repo", env={**os.environ, **env}, **kw)
         print(f"  ({time.time()-t0:.0f}s, exit {r.returncode})", flush=True)
         if r.returncode != 0:
             raise RuntimeError(f"{args[0]} failed with exit {r.returncode}")
 
-    import os
     os.makedirs("/cache/hf", exist_ok=True)
     os.makedirs("/cache/results/kv", exist_ok=True)
     if not os.path.islink("/repo/results") and not os.path.exists("/repo/results"):
@@ -121,6 +110,27 @@ def run_all_heads_check(eval_only: bool = False, k: int = 1):
 
     print("=== guardrails (fast tests; catch a broken checkout before any GPU time) ===")
     run(sys.executable, "-m", "pytest", "tests/", "-q", "-m", "not slow")
+    return run
+
+
+@app.function(
+    image=image,
+    gpu=GPU,
+    volumes={"/cache": volume},
+    timeout=TIMEOUT_S,
+)
+def run_all_heads_check(eval_only: bool = False, k: int = 1):
+    """eval_only=True skips probe + fit and resumes the eval: 07_eval_tasks.py skips
+    configs already in results/eval_tasks.json and reuses the HellaSwag source KV store
+    left on the volume, so only the unfinished configs are scored.
+
+    `k` is the number of source layers per target layer for the --all-heads fit. The
+    probe is skipped when its output is already on the volume (03_fit.py only reads its
+    top-k selection, which does not depend on k)."""
+    import os
+    import sys
+
+    run = _container_setup()
 
     cfg = "configs/qwen3_0.6b_to_1.7b.a10.yaml"
     # k=1 first: same feature width (1,024 = 8 heads x 128 dim) as the same-head k=8 case
@@ -158,6 +168,42 @@ def run_all_heads_check(eval_only: bool = False, k: int = 1):
 
     volume.commit()
     print("\n=== done. KV store and results cached in the kv-transfer-cache volume. ===")
+
+
+@app.function(
+    image=image,
+    gpu=GPU,
+    volumes={"/cache": volume},
+    timeout=TIMEOUT_S,
+)
+def run_heldout_r2(holdout_shards: int = 2):
+    """Out-of-sample R^2 for k=1 and k=8, same-head and all-heads: fit on all but the last
+    `holdout_shards` calibration shards, score R^2 on those. No model load, no benchmark;
+    reads the calibration KV store and probe already on the volume. Train-only mappers are
+    saved with a _ho<N> suffix; the summary goes to results/heldout_r2.json."""
+    import sys
+
+    run = _container_setup()
+    cfg = "configs/qwen3_0.6b_to_1.7b.a10.yaml"
+    for extra in ([], ["--all-heads"]):
+        label = "all-heads" if extra else "same-head"
+        print(f"\n=== held-out R^2: {label}, k=1 and k=8, last {holdout_shards} shards held out ===")
+        run(sys.executable, "scripts/03_fit.py", "--config", cfg, "--device", "cuda",
+            "--k", "1", "8", "--holdout-shards", str(holdout_shards), *extra)
+    volume.commit()
+    run("cat", "results/heldout_r2.json")
+    print("\n=== done. results/heldout_r2.json on the kv-transfer-cache volume. ===")
+
+
+@app.local_entrypoint()
+def spawn_heldout(holdout_shards: int = 2, gpu: str = "A100-40GB"):
+    """Fire-and-forget the held-out R^2 run against the DEPLOYED app (see spawn_check for
+    why it spawns via from_name). Defaults to an A100: the k=8 all-heads fit is fp64-bound."""
+    print(f"GPU: {gpu}  |  held-out shards: {holdout_shards}  |  hard timeout: {TIMEOUT_S/60:.0f} min")
+    fn = modal.Function.from_name(app.name, "run_heldout_r2").with_options(gpu=gpu)
+    call = fn.spawn(holdout_shards=holdout_shards)
+    print(f"Spawned, call id: {call.object_id}")
+    print("Check progress with: modal container list, then modal container logs <ta-...>")
 
 
 @app.local_entrypoint()

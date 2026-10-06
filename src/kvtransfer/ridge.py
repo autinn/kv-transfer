@@ -96,6 +96,29 @@ def solve_multi(acc: GramAccumulator, lams) -> dict[float, RidgeSolution]:
 
 
 @torch.no_grad()
+def r2_from_stats(acc: GramAccumulator, W: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+    """Out-of-sample R^2 per output dim of a fitted (W, b) on data summarised by `acc`.
+
+    Equivalent to `r2_oos` on the raw held-out (x, y), but from the same streamed
+    sufficient statistics the fit uses, so a held-out set never has to sit in memory.
+    With residual e = y - xW - b and centered moments of the held-out data:
+        sum (e - mean e)^2 = SYY_c - 2 diag(W^T CXY) + diag(W^T CXX W)
+        sum e^2            = that + n * (mean e)^2
+    and TSS = SYY_c (the held-out targets' own variance, as in `r2_oos`).
+    """
+    f64 = torch.float64
+    n = acc.n
+    W, b = W.to(f64).to(acc.xtx.device), b.to(f64).to(acc.xtx.device)
+    mx, my = (acc.sx / n).to(f64), (acc.sy / n).to(f64)
+    cxx = acc.xtx.to(f64) - n * torch.outer(mx, mx)
+    cxy = acc.xty.to(f64) - n * torch.outer(mx, my)
+    syy_c = acc.syy.to(f64) - n * my * my
+    e_mean = my - mx @ W - b
+    rss = syy_c - 2.0 * (W * cxy).sum(0) + ((cxx @ W) * W).sum(0) + n * e_mean * e_mean
+    return (1.0 - rss.clamp_min(0.0) / syy_c.clamp_min(1e-12)).to(torch.float32)
+
+
+@torch.no_grad()
 def r2_oos(
     sol: RidgeSolution, x: torch.Tensor, y: torch.Tensor
 ) -> torch.Tensor:
