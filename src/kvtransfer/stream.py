@@ -27,6 +27,7 @@ from dataclasses import dataclass
 import torch
 
 from .gram import GramAccumulator
+from .ridge import RidgeSolution, solve
 
 
 @dataclass
@@ -119,6 +120,14 @@ class TopKGrams:
     information flow. This is the feature width implied by the paper's quoted mapper
     parameter counts; the default (same-numbered head only) is cheaper and was this
     repo's original reading, now confirmed narrower than the paper's.
+
+    Storage differs by mode. Same-head: one accumulator per (lt, h), keyed `(lt, h)`.
+    All-heads: every target head of a layer sees the same features, so X^T X, sum(X)
+    and n are identical across heads; one accumulator per lt (keyed `lt`) holds them
+    once, with all heads' targets side by side (d_out = kv_heads * head_dim, head-major).
+    Ridge solves each output column independently, so this gives the same per-head
+    solutions as separate Grams at 1/kv_heads the accumulation cost and memory. Use
+    `solve_heads` rather than indexing `K`/`V` directly to stay mode-agnostic.
     """
 
     def __init__(
@@ -137,6 +146,12 @@ class TopKGrams:
         self.K, self.V = {}, {}
         for lt, srcs in self.src_layers.items():
             d_in = len(srcs) * head_dim * (kv_heads if all_heads else 1)
+            if all_heads:
+                if "K" in self.kinds:
+                    self.K[lt] = GramAccumulator(d_in, kv_heads * head_dim, device)
+                if "V" in self.kinds:
+                    self.V[lt] = GramAccumulator(d_in, kv_heads * head_dim, device)
+                continue
             for h in range(kv_heads):
                 if "K" in self.kinds:
                     self.K[(lt, h)] = GramAccumulator(d_in, head_dim, device)
@@ -148,9 +163,27 @@ class TopKGrams:
         k: int, kv_heads: int, head_dim: int, n_kinds: int = 2, all_heads: bool = False
     ) -> int:
         """fp64 accumulator footprint of one target layer, for grouping under a budget."""
-        d_in = k * head_dim * (kv_heads if all_heads else 1)
+        if all_heads:
+            # One shared accumulator per kind; see the class docstring.
+            d_in, d_out = k * kv_heads * head_dim, kv_heads * head_dim
+            return 8 * (d_in * d_in + d_in * d_out + d_in + 2 * d_out) * n_kinds
+        d_in = k * head_dim
         per = d_in * d_in + d_in * head_dim + d_in + 2 * head_dim
         return 8 * per * kv_heads * n_kinds
+
+    def solve_heads(self, kind: str, lt: int, lam: float) -> list[RidgeSolution]:
+        """Per-head ridge solutions for target layer lt, in head order, either mode."""
+        store = self.K if kind == "K" else self.V
+        if not self.all_heads:
+            return [solve(store[(lt, h)], lam=lam) for h in range(self.kv_heads)]
+        sol = solve(store[lt], lam=lam)
+        D = self.head_dim
+        return [
+            RidgeSolution(W=sol.W[:, h * D:(h + 1) * D].contiguous(),
+                          b=sol.b[h * D:(h + 1) * D].contiguous(), lam=sol.lam,
+                          r2_per_dim=sol.r2_per_dim[h * D:(h + 1) * D].contiguous(), n=sol.n)
+            for h in range(self.kv_heads)
+        ]
 
     @torch.no_grad()
     def update(self, src_k, src_v, tgt_k, tgt_v) -> None:
@@ -161,16 +194,20 @@ class TopKGrams:
             # All-heads features don't depend on the target head, so build them once
             # per target layer rather than once per (target layer, head).
             if self.all_heads:
+                # One shared accumulator per kind, targets of every head side by side.
                 if "K" in self.kinds:
-                    xk_all = torch.cat([sk[ls, h2] for ls in srcs for h2 in range(self.kv_heads)], dim=-1)
+                    xk = torch.cat([sk[ls, h2] for ls in srcs for h2 in range(self.kv_heads)], dim=-1)
+                    self.K[lt].update(xk, torch.cat(list(tk[lt]), dim=-1))
                 if "V" in self.kinds:
-                    xv_all = torch.cat([sv[ls, h2] for ls in srcs for h2 in range(self.kv_heads)], dim=-1)
+                    xv = torch.cat([sv[ls, h2] for ls in srcs for h2 in range(self.kv_heads)], dim=-1)
+                    self.V[lt].update(xv, torch.cat(list(tv[lt]), dim=-1))
+                continue
             for h in range(self.kv_heads):
                 if "K" in self.kinds:
-                    xk = xk_all if self.all_heads else torch.cat([sk[ls, h] for ls in srcs], dim=-1)
+                    xk = torch.cat([sk[ls, h] for ls in srcs], dim=-1)
                     self.K[(lt, h)].update(xk, tk[lt, h])
                 if "V" in self.kinds:
-                    xv = xv_all if self.all_heads else torch.cat([sv[ls, h] for ls in srcs], dim=-1)
+                    xv = torch.cat([sv[ls, h] for ls in srcs], dim=-1)
                     self.V[(lt, h)].update(xv, tv[lt, h])
 
     def state_dict(self) -> dict:
@@ -178,8 +215,10 @@ class TopKGrams:
                        "head_dim": self.head_dim, "kinds": list(self.kinds),
                        "all_heads": self.all_heads}}
         for name, store in (("K", self.K), ("V", self.V)):
-            for (lt, h), acc in store.items():
-                sd[f"{name}.{lt}.{h}"] = acc.state_dict()
+            for key, acc in store.items():
+                # all_heads keys are lt (shared accumulator), same-head keys are (lt, h).
+                tail = f"{key[0]}.{key[1]}" if isinstance(key, tuple) else f"{key}"
+                sd[f"{name}.{tail}"] = acc.state_dict()
         return sd
 
     @classmethod
@@ -190,8 +229,9 @@ class TopKGrams:
         for key, val in sd.items():
             if key == "meta":
                 continue
-            name, lt, h = key.split(".")
-            (o.K if name == "K" else o.V)[(int(lt), int(h))] = GramAccumulator.from_state_dict(val)
+            name, *idx = key.split(".")
+            k = int(idx[0]) if len(idx) == 1 else (int(idx[0]), int(idx[1]))
+            (o.K if name == "K" else o.V)[k] = GramAccumulator.from_state_dict(val)
         return o
 
 

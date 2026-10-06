@@ -6,7 +6,8 @@ ridge maps. Saves a KVMapper per (k, lambda).
 
 Capture happens once (`kvtransfer.kvstore`); if the probe already ran on the same
 calibration set, this stage never loads a model. Each (k, lambda) is then a disk pass
-plus one Cholesky per head, and all lambdas are solved from the same pass.
+plus one Cholesky per head (per target layer with --all-heads, whose heads share one
+Gram), and all lambdas are solved from the same pass.
 
 Large pairs do not fit every target layer's Grams in memory at once (14B -> 32B at k=20
 is ~50 GB of fp64), so target layers are fitted in groups under `fit.max_gram_gb`, one
@@ -23,7 +24,6 @@ import torch
 
 from kvtransfer.mapper import KVMapper
 from kvtransfer.pipeline import calibration_ids, calibration_stores, load_config, paired_batches
-from kvtransfer.ridge import solve
 from kvtransfer.runtime import output_dir, pair_dims, resolve_runtime, rope_theta
 from kvtransfer.select import identity_alignment, top_k
 from kvtransfer.stream import TopKGrams
@@ -137,11 +137,10 @@ def main():
                     gv.update(sk, sv, tk, tv)
             for lam in lams:
                 for lt in group:
+                    k_sols, v_sols = gk.solve_heads("K", lt, lam), gv.solve_heads("V", lt, lam)
                     for h in range(H):
-                        sk_sol = solve(gk.K[(lt, h)], lam=lam)
-                        sv_sol = solve(gv.V[(lt, h)], lam=lam)
-                        mappers[lam].set("K", lt, h, sk_sol.W, sk_sol.b, sk_sol.r2)
-                        mappers[lam].set("V", lt, h, sv_sol.W, sv_sol.b, sv_sol.r2)
+                        mappers[lam].set("K", lt, h, k_sols[h].W, k_sols[h].b, k_sols[h].r2)
+                        mappers[lam].set("V", lt, h, v_sols[h].W, v_sols[h].b, v_sols[h].r2)
             del gk, gv
             print(f"  group {gi+1}/{len(groups)} (target layers {group[0]}-{group[-1]}) "
                   f"{(time.time()-t0)/60:.1f}m", flush=True)
