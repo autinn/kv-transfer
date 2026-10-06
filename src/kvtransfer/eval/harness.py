@@ -365,6 +365,27 @@ def task_requests_by_context(task: EncodedTask) -> dict[int, list[tuple[int, int
     return by_ctx
 
 
+def mc_correct(task: EncodedTask, raw: dict) -> dict[str, list[int]]:
+    """Per-document 0/1 correctness for a multiple-choice task, under acc and acc_norm.
+
+    The per-question view behind `finalize`'s averages, kept separate so paired tests
+    across configurations score each question exactly the way the reported metric does.
+    """
+    missing = [ci for ci in range(len(task.contexts)) if ci not in raw]
+    if missing:
+        raise ValueError(f"{task.name}: {len(missing)} contexts unscored, e.g. {missing[0]}")
+    ll = [[0.0] * len(r) for r in task.requests]
+    for ci, pairs in task_requests_by_context(task).items():
+        for (d, c), s in zip(pairs, raw[ci]):
+            ll[d][c] = s
+    acc, acc_norm = [], []
+    for d, reqs in enumerate(task.requests):
+        lens = [len(r[2]) for r in reqs]
+        acc.append(int(max(range(len(reqs)), key=lambda c: ll[d][c]) == task.labels[d]))
+        acc_norm.append(int(max(range(len(reqs)), key=lambda c: ll[d][c] / lens[c]) == task.labels[d]))
+    return {"acc": acc, "acc_norm": acc_norm}
+
+
 def finalize(task: EncodedTask, raw: dict) -> dict:
     """Metrics from the merged raw scores of every context."""
     missing = [ci for ci in range(len(task.contexts)) if ci not in raw]
@@ -372,16 +393,8 @@ def finalize(task: EncodedTask, raw: dict) -> dict:
         raise ValueError(f"{task.name}: {len(missing)} contexts unscored, e.g. {missing[0]}")
     n = len(task.requests)
     if task.kind == "mc":
-        ll = [[0.0] * len(r) for r in task.requests]
-        for ci, pairs in task_requests_by_context(task).items():
-            for (d, c), s in zip(pairs, raw[ci]):
-                ll[d][c] = s
-        acc = acc_norm = 0
-        for d, reqs in enumerate(task.requests):
-            lens = [len(r[2]) for r in reqs]
-            acc += int(max(range(len(reqs)), key=lambda c: ll[d][c]) == task.labels[d])
-            acc_norm += int(max(range(len(reqs)), key=lambda c: ll[d][c] / lens[c]) == task.labels[d])
-        return {"acc": acc / n, "acc_norm": acc_norm / n, "n": n}
+        c = mc_correct(task, raw)
+        return {"acc": sum(c["acc"]) / n, "acc_norm": sum(c["acc_norm"]) / n, "n": n}
     strict = flex = 0
     for d, ci in enumerate(task.requests):
         gold = gold_answer(task.labels[d])

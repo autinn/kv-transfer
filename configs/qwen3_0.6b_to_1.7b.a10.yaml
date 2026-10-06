@@ -41,6 +41,10 @@ eval:
   wikitext_seqs: 64
   prefix_len: 512
   store_budget_gb: 100          # source KV per benchmark round (0.6B: ~115 KB/token)
+  # Keep the benchmark source-KV stores (HellaSwag: ~55.6 GB) after a clean run, so later
+  # evals of new mappers reuse them. Off, each eval recaptured it: ~10 min on Modal,
+  # bound by writes to the network volume with the GPU near idle (2026-10-06).
+  keep_stores: true
   # The paper's five benchmarks, same settings as configs/qwen3_14b_to_32b.yaml.
   # Without this, 07_eval_tasks.py runs only ARC-Challenge + WinoGrande.
   # 07 scores EVERY mapper in results/mappers/ (6 k x 3 lambda + identity x 3 + 4
