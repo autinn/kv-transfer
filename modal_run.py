@@ -199,7 +199,7 @@ def run_heldout_r2(holdout_shards: int = 2):
     image=image,
     gpu=GPU,
     volumes={"/cache": volume},
-    timeout=60 * 60,
+    timeout=90 * 60,
 )
 def run_speedup(quick: bool = False):
     """Transfer vs re-prefill latency on 0.6B -> 1.7B: the test run before any H100 time.
@@ -207,7 +207,8 @@ def run_speedup(quick: bool = False):
     Paper protocol (64-32K tokens, 50 warmup / 30 timed) unless quick, which runs three
     lengths with 3 / 5 trials to check the script end to end in a couple of minutes.
     Needs no KV store or fitted mapper; only the two models' weights (cached on the
-    volume from earlier runs). Estimated ~25 min on an L4 for the full protocol."""
+    volume from earlier runs). Full protocol on an L4: ~60-70 min (5 timed stages x 10
+    lengths x 80 runs, dominated by the 16K and 32K cells), under a 90 min cap."""
     import glob
     import sys
 
@@ -215,8 +216,21 @@ def run_speedup(quick: bool = False):
     cfg = "configs/qwen3_0.6b_to_1.7b.a10.yaml"
     extra = ["--lengths", "64", "1024", "8192", "--warmup", "3", "--trials", "5"] if quick else []
     print(f"\n=== speedup: {'quick check' if quick else 'paper protocol'}, config={cfg} ===")
-    run(sys.executable, "scripts/10_speedup.py", "--config", cfg, "--device", "cuda", *extra)
-    volume.commit()
+    # The script rewrites its JSON after every timed cell; committing the volume every
+    # 2 min means a run cut off by the timeout still leaves those cells readable.
+    import threading
+    stop = threading.Event()
+
+    def commit_loop():
+        while not stop.wait(120):
+            volume.commit()
+
+    threading.Thread(target=commit_loop, daemon=True).start()
+    try:
+        run(sys.executable, "scripts/10_speedup.py", "--config", cfg, "--device", "cuda", *extra)
+    finally:
+        stop.set()
+        volume.commit()
     for f in glob.glob("/repo/results/**/speedup_*.json", recursive=True):
         print("saved on the volume:", f.replace("/repo/results", "results"))
     print("\n=== done. Fetch with: modal volume get kv-transfer-cache <path above> . ===")
@@ -228,9 +242,9 @@ def spawn_speedup(quick: bool = False, gpu: str = GPU):
 
     modal deploy modal_run.py
     modal run modal_run.py::spawn_speedup --quick     # ~5 min incl. startup: does it run?
-    modal run modal_run.py::spawn_speedup             # full paper protocol, ~25 min
+    modal run modal_run.py::spawn_speedup             # full paper protocol, ~60-70 min
     """
-    print(f"GPU: {gpu}  |  {'quick check' if quick else 'paper protocol'}  |  hard timeout: 60 min")
+    print(f"GPU: {gpu}  |  {'quick check' if quick else 'paper protocol'}  |  hard timeout: 90 min")
     print("Times 0.6B -> 1.7B only. It does NOT run 14B -> 32B.")
     fn = modal.Function.from_name(app.name, "run_speedup")
     if gpu != GPU:

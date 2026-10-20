@@ -1,0 +1,19 @@
+# Latency only (scripts/10_speedup.py): the paper's second Qwen3 pair, 8B -> 32B at k=12
+# (its Table 16: 4.3-17.8x). No calibration or fit runs from this config; the speedup
+# script uses a random-weight mapper of the fitted shape. Calibration/runtime are here
+# because every config carries them.
+source: Qwen/Qwen3-8B
+target: Qwen/Qwen3-32B
+output_dir: results/qwen3_8b_to_32b
+
+calibration:
+  dataset: fineweb-edu
+  n_seqs: 500
+  seq_len: 1024
+  stride: 4
+  seed: 0
+
+runtime:
+  dtype: bfloat16
+  device: cuda
+  store_dir: results/kv

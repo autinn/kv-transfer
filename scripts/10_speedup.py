@@ -51,8 +51,9 @@ def is_oom(e: Exception) -> bool:
     return isinstance(e, torch.cuda.OutOfMemoryError) or "out of memory" in str(e).lower()
 
 
-def run_cells(name, lengths, make_fn, args, device, results):
-    """Time make_fn(S)() at each length; after an OOM, skip the longer lengths."""
+def run_cells(name, lengths, make_fn, args, device, results, checkpoint=lambda: None):
+    """Time make_fn(S)() at each length; after an OOM, skip the longer lengths.
+    `checkpoint()` runs after every cell, so a run cut off by a timeout keeps its cells."""
     for S in lengths:
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
@@ -70,9 +71,11 @@ def run_cells(name, lengths, make_fn, args, device, results):
             results.setdefault(name, {})[S] = None
             for S2 in [x for x in lengths if x > S]:
                 results[name][S2] = None
+            checkpoint()
             return
         results.setdefault(name, {})[S] = r
         print(f"  {name:<16} S={S:>6}  {r['median']:9.2f} ms (median of {r['n']})", flush=True)
+        checkpoint()
 
 
 def main():
@@ -87,6 +90,11 @@ def main():
     ap.add_argument("--attn", default="sdpa",
                     help="attention kernel for both models (paper: flash_attention_2)")
     ap.add_argument("--no-e2e", action="store_true", help="skip loading the source model")
+    ap.add_argument("--prefill-from", type=Path,
+                    help="reuse the re-prefill timings in this result JSON (same target, GPU and "
+                         "protocol) instead of re-timing the target, e.g. 8B -> 32B after 14B -> 32B")
+    ap.add_argument("--e2e-dtype", default="bfloat16",
+                    help="mapper dtype for the end-to-end timing (one of --mapper-dtypes)")
     ap.add_argument("--device", default="cuda")
     args = ap.parse_args()
 
@@ -108,16 +116,32 @@ def main():
     ids = {S: torch.randint(0, vocab, (1, S), device=dev) for S in lengths}
     res: dict = {}
     flops: dict = {}
+    out = output_path(cfg, gpu)
 
-    print("\n=== re-prefill: target body ===", flush=True)
-    tgt = load_model(tgt_name, model_dtype, dev, attn_implementation=args.attn)
-    n_body_t = body_params(tgt)
-    for S in lengths:
-        flops.setdefault(S, {})["prefill"] = prefill_flops(
-            n_body_t, Lt, tgt_cfg.num_attention_heads, D, S)
-    run_cells("prefill", lengths, lambda S: (lambda: prefill(tgt, ids[S])), args, dev, res)
-    free(tgt)
-    del tgt
+    def checkpoint():
+        write(out, res, flops, args, src_name, tgt_name, gpu, rows=None)
+
+    if args.prefill_from:
+        prev = json.loads(args.prefill_from.read_text())
+        same = (prev["target"], prev["gpu"], prev["warmup"], prev["trials"], prev["attn"]) == (
+            tgt_name, gpu, args.warmup, args.trials, args.attn)
+        if not same:
+            raise SystemExit(f"--prefill-from {args.prefill_from}: different target, GPU or protocol")
+        print(f"\n=== re-prefill: reused from {args.prefill_from} ===", flush=True)
+        res["prefill"] = {S: prev["raw"]["prefill"].get(str(S)) for S in lengths}
+        for S in lengths:
+            flops.setdefault(S, {})["prefill"] = prev["flops"][str(S)]["prefill"]
+    else:
+        print("\n=== re-prefill: target body ===", flush=True)
+        tgt = load_model(tgt_name, model_dtype, dev, attn_implementation=args.attn)
+        n_body_t = body_params(tgt)
+        for S in lengths:
+            flops.setdefault(S, {})["prefill"] = prefill_flops(
+                n_body_t, Lt, tgt_cfg.num_attention_heads, D, S)
+        run_cells("prefill", lengths, lambda S: (lambda: prefill(tgt, ids[S])), args, dev, res,
+                  checkpoint)
+        free(tgt)
+        del tgt
 
     print("\n=== transfer: source cache -> target cache ===", flush=True)
     mappers = {}
@@ -138,7 +162,7 @@ def main():
     for name, m in mappers.items():
         run_cells(f"transfer_{name}", lengths,
                   lambda S, m=m: (lambda c=src_cache(S): transfer(m, c, D, th_s, model_dtype, tgt_cfg)),
-                  args, dev, res)
+                  args, dev, res, checkpoint)
     src_caches.clear()
 
     if not args.no_e2e:
@@ -148,15 +172,32 @@ def main():
         for S in lengths:
             flops[S]["source_prefill"] = prefill_flops(
                 n_body_s, Ls, src_cfg.num_attention_heads, D, S)
-        run_cells("source_prefill", lengths, lambda S: (lambda: prefill(src, ids[S])), args, dev, res)
-        for name, m in mappers.items():
-            run_cells(f"e2e_{name}", lengths,
-                      lambda S, m=m: (lambda: transfer(m, prefill(src, ids[S]), D, th_s,
-                                                       model_dtype, tgt_cfg)),
-                      args, dev, res)
+        run_cells("source_prefill", lengths, lambda S: (lambda: prefill(src, ids[S])), args, dev,
+                  res, checkpoint)
+        m = mappers[args.e2e_dtype]
+        run_cells(f"e2e_{args.e2e_dtype}", lengths,
+                  lambda S: (lambda: transfer(m, prefill(src, ids[S]), D, th_s, model_dtype, tgt_cfg)),
+                  args, dev, res, checkpoint)
         free(src)
 
-    report(res, flops, lengths, args, src_name, tgt_name, gpu, cfg)
+    report(res, flops, lengths, args, src_name, tgt_name, gpu, out)
+
+
+def output_path(cfg, gpu: str) -> Path:
+    return output_dir(cfg, ROOT) / f"speedup_{gpu.replace(' ', '_').replace('/', '_')}.json"
+
+
+def write(out, res, flops, args, src_name, tgt_name, gpu, rows):
+    """The result file; rows=None marks a partial file written mid-run."""
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps({
+        "source": src_name, "target": tgt_name, "gpu": gpu, "k": args.k,
+        "all_heads": not args.same_head, "attn": args.attn, "warmup": args.warmup,
+        "trials": args.trials, "torch": torch.__version__, "complete": rows is not None,
+        "rows": rows or [],
+        "raw": {n: {str(S): r for S, r in v.items()} for n, v in res.items()},
+        "flops": {str(S): f for S, f in flops.items()},
+    }, indent=2))
 
 
 def med(res, name, S):
@@ -167,7 +208,7 @@ def med(res, name, S):
 SHORT = {"float32": "fp32", "bfloat16": "bf16", "float16": "fp16"}
 
 
-def report(res, flops, lengths, args, src_name, tgt_name, gpu, cfg):
+def report(res, flops, lengths, args, src_name, tgt_name, gpu, out):
     dtypes = args.mapper_dtypes
     print("\n=== speedup = re-prefill / transfer (median ms) ===")
     head = f"{'tokens':>7} {'prefill':>9}"
@@ -175,7 +216,7 @@ def report(res, flops, lengths, args, src_name, tgt_name, gpu, cfg):
         head += f" {'xfer ' + SHORT.get(d, d):>11} {'speedup':>8}"
     head += f" {'FLOP ratio':>10}"
     if not args.no_e2e:
-        head += f" {'e2e ' + SHORT.get(dtypes[-1], dtypes[-1]):>10} {'e2e x':>6}"
+        head += f" {'e2e ' + SHORT.get(args.e2e_dtype, args.e2e_dtype):>10} {'e2e x':>6}"
     print(head)
     rows = []
     for S in lengths:
@@ -190,9 +231,9 @@ def report(res, flops, lengths, args, src_name, tgt_name, gpu, cfg):
         row["flop_ratio"] = fr
         line += f" {fr:>9.1f}x"
         if not args.no_e2e:
-            e = med(res, f"e2e_{dtypes[-1]}", S)
+            e = med(res, f"e2e_{args.e2e_dtype}", S)
             ex = p / e if p and e else None
-            row[f"e2e_{dtypes[-1]}_ms"], row["e2e_speedup"] = e, ex
+            row[f"e2e_{args.e2e_dtype}_ms"], row["e2e_speedup"] = e, ex
             line += f" {e if e is None else round(e, 2)!s:>10} {'' if ex is None else f'{ex:.2f}x':>6}"
         print(line)
         rows.append(row)
@@ -211,15 +252,7 @@ def report(res, flops, lengths, args, src_name, tgt_name, gpu, cfg):
     print("Differences from the paper: one GPU (no cross-GPU transfer, which the paper "
           f"includes); attention kernel {args.attn}; random-weight mapper (same arithmetic).")
 
-    out = output_dir(cfg, ROOT) / f"speedup_{gpu.replace(' ', '_').replace('/', '_')}.json"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps({
-        "source": src_name, "target": tgt_name, "gpu": gpu, "k": args.k,
-        "all_heads": not args.same_head, "attn": args.attn, "warmup": args.warmup,
-        "trials": args.trials, "torch": torch.__version__, "rows": rows,
-        "raw": {n: {str(S): r for S, r in v.items()} for n, v in res.items()},
-        "flops": {str(S): f for S, f in flops.items()},
-    }, indent=2))
+    write(out, res, flops, args, src_name, tgt_name, gpu, rows)
     print(f"\nsaved -> {out}")
 
 
