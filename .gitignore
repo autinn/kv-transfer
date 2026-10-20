@@ -13,3 +13,4 @@ results/smoke_*/
 results/*/mappers/
 results/*/*.partial.json
 .DS_Store
+VIDEO_PLAN.md

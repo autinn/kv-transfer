@@ -24,8 +24,9 @@ target. Mappers: all-heads features, λ = 0.01, 500 × 1,024 FineWeb-Edu calibra
 | 14B → 32B | depth (40 → 64) | 68.4% | — | **97.8%** | 0.730 |
 
 *Zero-copy* pastes the source cache in unmapped (layer-aligned): the baseline the
-mapper has to beat. Every k = 8 vs zero-copy and k = 8 vs k = 1 difference is significant
-on a paired test (`08_paired_test.py`; smallest p = 3e−21).
+mapper has to beat. Every k = 8 vs zero-copy and k = 8 vs k = 1 difference that was run is
+significant on a paired test (`08_paired_test.py`; weakest: +1.8 points, p = 3e−14, k = 8 vs
+k = 1 on 0.6B → 1.7B). k = 1 was not run on 14B → 32B.
 
 What the four pairs say so far:
 
