@@ -12,3 +12,4 @@ results/selftest/
 results/smoke_*/
 results/*/mappers/
 results/*/*.partial.json
+.DS_Store

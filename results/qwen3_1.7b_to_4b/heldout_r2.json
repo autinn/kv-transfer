@@ -1,0 +1,24 @@
+{
+  "mapper_k1_lam0.01_allheads_ho2": {
+    "k": "k1",
+    "lam": 0.01,
+    "all_heads": true,
+    "holdout_shards": 2,
+    "n_shards": 20,
+    "train_r2_k": 0.6212588672836622,
+    "train_r2_v": 0.48472617551063496,
+    "heldout_r2_k": 0.6084943591720529,
+    "heldout_r2_v": 0.46793123862395686
+  },
+  "mapper_k8_lam0.01_allheads_ho2": {
+    "k": "k8",
+    "lam": 0.01,
+    "all_heads": true,
+    "holdout_shards": 2,
+    "n_shards": 20,
+    "train_r2_k": 0.7470766589459445,
+    "train_r2_v": 0.6285950902642475,
+    "heldout_r2_k": 0.7065354773981704,
+    "heldout_r2_v": 0.574418530282047
+  }
+}

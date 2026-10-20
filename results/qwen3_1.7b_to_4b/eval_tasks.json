@@ -1,0 +1,50 @@
+{
+  "standalone": {
+    "hellaswag": {
+      "acc": 0.5228042222664808,
+      "acc_norm": 0.6850229038040231,
+      "n": 10042,
+      "retention_pct": 100.00000000000001
+    }
+  },
+  "oracle": {
+    "hellaswag": {
+      "acc": 0.5225054769966142,
+      "acc_norm": 0.6845249950209121,
+      "n": 10042,
+      "retention_pct": 99.92731501671754
+    }
+  },
+  "zero_copy": {
+    "hellaswag": {
+      "acc": 0.25642302330213107,
+      "acc_norm": 0.2629954192391954,
+      "n": 10042,
+      "retention_pct": 38.39220816979212
+    }
+  },
+  "mean_pred": {
+    "hellaswag": {
+      "acc": 0.2698665604461263,
+      "acc_norm": 0.27833100975901215,
+      "n": 10042,
+      "retention_pct": 40.6309056548917
+    }
+  },
+  "mapper_k1_lam0.01_allheads": {
+    "hellaswag": {
+      "acc": 0.42362079267078273,
+      "acc_norm": 0.5481975702051384,
+      "n": 10042,
+      "retention_pct": 80.02616659398169
+    }
+  },
+  "mapper_k8_lam0.01_allheads": {
+    "hellaswag": {
+      "acc": 0.47689703246365267,
+      "acc_norm": 0.6325433180641307,
+      "n": 10042,
+      "retention_pct": 92.33900276202937
+    }
+  }
+}

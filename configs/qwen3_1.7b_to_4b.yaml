@@ -1,0 +1,43 @@
+# Qwen3-1.7B -> Qwen3-4B: depth AND width change (28 -> 36 layers, hidden 2048 -> 2560).
+# The "mixed" pair of the minimum family matrix; see qwen3_4b_to_8b.yaml for the design.
+# Same protocol as the 14B->32B replication: 500x1024 calibration, all-heads k=8,
+# lambda=0.01, HellaSwag only.
+source: Qwen/Qwen3-1.7B
+target: Qwen/Qwen3-4B
+output_dir: results/qwen3_1.7b_to_4b
+
+calibration:
+  dataset: fineweb-edu
+  n_seqs: 500
+  seq_len: 1024
+  stride: 4
+  seed: 0
+
+runtime:
+  chunk: 25
+  batch_size: 8
+  dtype: bfloat16      # bf16 here, unlike the fp16 0.6B->1.7B runs; stores are keyed by
+                       # store_dtype only, so this must not share a store_dir with those
+  store_dtype: float16
+  device: cuda
+  store_dir: results/kv
+
+probe:
+  gram_dtype: float32
+  gram_device: cuda    # 28x36x8 grid
+  rope_diagonal_only: true
+
+fit:
+  lambdas: [0.01]
+  k_sweep: [8]
+  max_gram_gb: 30
+  gram_device: cuda
+
+eval:
+  wikitext_seqs: 64
+  prefix_len: 512
+  store_budget_gb: 30  # 1.7B source KV ~112 KB/token at 28 layers; HellaSwag ~55 GB total,
+                       # so 2 rounds of ~30 GB: sized for a 120 GB disk
+  keep_stores: false
+  tasks:
+    hellaswag: {num_fewshot: 0}

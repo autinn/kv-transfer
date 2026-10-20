@@ -1,0 +1,1586 @@
+
+=== 2026-10-07 12:43:13 guardrails (fast tests) ===
+........................................................................ [ 98%]
+.                                                                        [100%]
+73 passed, 8 deselected in 24.37s
+
+=== 2026-10-07 12:43:40 disk before pair 1 ===
+overlay         120G   22G   99G  18% /
+
+=== 2026-10-07 12:43:40 models (download if missing) ===
+[90mHint: A new version of huggingface_hub (2.1.1) is available! You are using version 1.33.0.[0m
+[90mHint: The `hf-cli` skill is not installed. Run `hf skills add -g` to teach your AI agents how to use the `hf` CLI.[0m
+Fetching 13 files:   0%|          | 0/13 [00:00<?, ?it/s]Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Fetching 13 files:   8%|▊         | 1/13 [00:00<00:05,  2.12it/s]Fetching 13 files:  15%|█▌        | 2/13 [00:00<00:03,  2.90it/s]Fetching 13 files:  46%|████▌     | 6/13 [00:01<00:01,  6.04it/s]Fetching 13 files:  62%|██████▏   | 8/13 [00:01<00:00,  7.58it/s]Fetching 13 files:  69%|██████▉   | 9/13 [00:01<00:00,  4.64it/s]Fetching 13 files:  77%|███████▋  | 10/13 [00:02<00:00,  3.59it/s]Fetching 13 files:  85%|████████▍ | 11/13 [00:03<00:00,  2.50it/s]Fetching 13 files:  92%|█████████▏| 12/13 [00:27<00:06,  6.46s/it]Fetching 13 files: 100%|██████████| 13/13 [00:47<00:00, 10.19s/it]Fetching 13 files: 100%|██████████| 13/13 [00:47<00:00,  3.65s/it]
+Fetching 15 files:   0%|          | 0/15 [00:00<?, ?it/s]Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Fetching 15 files:   7%|▋         | 1/15 [00:00<00:02,  5.58it/s]Fetching 15 files:  47%|████▋     | 7/15 [00:00<00:00, 19.72it/s]Fetching 15 files:  60%|██████    | 9/15 [00:00<00:00, 14.76it/s]Fetching 15 files:  67%|██████▋   | 10/15 [00:20<00:00, 14.76it/s]Fetching 15 files:  73%|███████▎  | 11/15 [00:46<00:27,  6.94s/it]Fetching 15 files:  80%|████████  | 12/15 [01:50<00:50, 16.88s/it]Fetching 15 files:  87%|████████▋ | 13/15 [02:00<00:31, 15.60s/it]Fetching 15 files:  93%|█████████▎| 14/15 [02:01<00:12, 12.35s/it]Fetching 15 files: 100%|██████████| 15/15 [02:06<00:00, 10.53s/it]Fetching 15 files: 100%|██████████| 15/15 [02:06<00:00,  8.43s/it]
+
+=== 2026-10-07 12:46:36 probe (Stage A) + calibration capture, both models  [configs/qwen3_4b_to_8b.yaml] ===
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+src Qwen/Qwen3-4B: 36 layers | tgt Qwen/Qwen3-8B: 36 layers | 8 kv heads x 128
+device=cuda dtype=bfloat16 shard=25 stride=4
+calibration: (500, 1024)
+  capturing Qwen/Qwen3-4B -> /root/kv-transfer/results/kv/Qwen__Qwen3-4B/calib_500x1024_s0_st4: 20/20 shards, ~18.9 GB
+loading Qwen/Qwen3-4B (bfloat16, cuda) ...
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights:   4%|▎         | 14/398 [00:00<00:02, 129.57it/s]Loading weights:  12%|█▏        | 48/398 [00:00<00:01, 239.80it/s]Loading weights:  20%|██        | 81/398 [00:00<00:01, 270.35it/s]Loading weights:  28%|██▊       | 113/398 [00:00<00:00, 286.99it/s]Loading weights:  36%|███▌      | 142/398 [00:00<00:00, 286.72it/s]Loading weights:  43%|████▎     | 171/398 [00:00<00:00, 285.03it/s]Loading weights:  51%|█████     | 203/398 [00:00<00:00, 291.78it/s]Loading weights:  59%|█████▉    | 236/398 [00:00<00:00, 299.87it/s]Loading weights:  68%|██████▊   | 269/398 [00:00<00:00, 304.97it/s]Loading weights:  76%|███████▌  | 302/398 [00:01<00:00, 309.01it/s]Loading weights:  84%|████████▍ | 335/398 [00:01<00:00, 311.84it/s]Loading weights:  92%|█████████▏| 368/398 [00:01<00:00, 314.29it/s]Loading weights: 100%|██████████| 398/398 [00:01<00:00, 299.41it/s]
+    shard 1/20  0.3m elapsed, ~5m left
+    shard 2/20  0.5m elapsed, ~5m left
+    shard 3/20  0.8m elapsed, ~4m left
+    shard 4/20  0.9m elapsed, ~4m left
+    shard 5/20  1.2m elapsed, ~4m left
+    shard 6/20  1.4m elapsed, ~3m left
+    shard 7/20  1.5m elapsed, ~3m left
+    shard 8/20  1.8m elapsed, ~3m left
+    shard 9/20  1.9m elapsed, ~2m left
+    shard 10/20  2.2m elapsed, ~2m left
+    shard 11/20  2.3m elapsed, ~2m left
+    shard 12/20  2.6m elapsed, ~2m left
+    shard 13/20  2.7m elapsed, ~1m left
+    shard 14/20  2.9m elapsed, ~1m left
+    shard 15/20  3.1m elapsed, ~1m left
+    shard 16/20  3.3m elapsed, ~1m left
+    shard 17/20  3.5m elapsed, ~1m left
+    shard 18/20  3.7m elapsed, ~0m left
+    shard 19/20  3.8m elapsed, ~0m left
+    shard 20/20  4.1m elapsed, ~0m left
+  capturing Qwen/Qwen3-8B -> /root/kv-transfer/results/kv/Qwen__Qwen3-8B/calib_500x1024_s0_st4: 20/20 shards, ~18.9 GB
+loading Qwen/Qwen3-8B (bfloat16, cuda) ...
+Loading weights:   0%|          | 0/399 [00:00<?, ?it/s]Loading weights:   0%|          | 1/399 [00:00<04:38,  1.43it/s]Loading weights:   1%|          | 2/399 [00:01<06:15,  1.06it/s]Loading weights:   7%|▋         | 28/399 [00:01<00:16, 22.07it/s]Loading weights:  13%|█▎        | 50/399 [00:02<00:08, 42.44it/s]Loading weights:  18%|█▊        | 71/399 [00:02<00:05, 63.67it/s]Loading weights:  24%|██▎       | 94/399 [00:02<00:03, 88.60it/s]Loading weights:  29%|██▊       | 114/399 [00:02<00:03, 89.93it/s]Loading weights:  33%|███▎      | 130/399 [00:02<00:04, 64.08it/s]Loading weights:  36%|███▌      | 142/399 [00:03<00:04, 61.31it/s]Loading weights:  40%|████      | 160/399 [00:03<00:03, 77.17it/s]Loading weights:  45%|████▌     | 181/399 [00:03<00:02, 97.25it/s]Loading weights:  49%|████▉     | 195/399 [00:03<00:02, 85.61it/s]Loading weights:  52%|█████▏    | 207/399 [00:03<00:02, 70.26it/s]Loading weights:  54%|█████▍    | 217/399 [00:04<00:03, 53.29it/s]Loading weights:  59%|█████▉    | 236/399 [00:04<00:02, 72.78it/s]Loading weights:  65%|██████▍   | 258/399 [00:04<00:01, 96.81it/s]Loading weights:  70%|███████   | 280/399 [00:04<00:01, 118.74it/s]Loading weights:  75%|███████▌  | 301/399 [00:04<00:00, 121.62it/s]Loading weights:  79%|███████▉  | 316/399 [00:04<00:00, 93.51it/s] Loading weights:  82%|████████▏ | 329/399 [00:05<00:01, 65.00it/s]Loading weights:  85%|████████▍ | 339/399 [00:05<00:00, 65.09it/s]Loading weights:  89%|████████▉ | 357/399 [00:05<00:00, 81.53it/s]Loading weights:  95%|█████████▍| 379/399 [00:05<00:00, 105.43it/s]Loading weights: 100%|██████████| 399/399 [00:05<00:00, 68.81it/s] 
+    shard 1/20  0.3m elapsed, ~5m left
+    shard 2/20  0.5m elapsed, ~4m left
+    shard 3/20  0.7m elapsed, ~4m left
+    shard 4/20  0.9m elapsed, ~3m left
+    shard 5/20  1.0m elapsed, ~3m left
+    shard 6/20  1.2m elapsed, ~3m left
+    shard 7/20  1.4m elapsed, ~3m left
+    shard 8/20  1.7m elapsed, ~2m left
+    shard 9/20  1.9m elapsed, ~2m left
+    shard 10/20  2.1m elapsed, ~2m left
+    shard 11/20  2.4m elapsed, ~2m left
+    shard 12/20  2.5m elapsed, ~2m left
+    shard 13/20  2.8m elapsed, ~1m left
+    shard 14/20  2.9m elapsed, ~1m left
+    shard 15/20  3.0m elapsed, ~1m left
+    shard 16/20  3.2m elapsed, ~1m left
+    shard 17/20  3.4m elapsed, ~1m left
+    shard 18/20  3.6m elapsed, ~0m left
+    shard 19/20  3.8m elapsed, ~0m left
+    shard 20/20  4.1m elapsed, ~0m left
+statistics: 1.44 GB in contiguous tensors on cuda
+  shard 1/20: n=6400 obs/head, 0.1m elapsed, ~2m left
+  shard 2/20: n=12800 obs/head, 0.1m elapsed, ~1m left
+  shard 3/20: n=19200 obs/head, 0.2m elapsed, ~1m left
+  shard 4/20: n=25600 obs/head, 0.3m elapsed, ~1m left
+  shard 5/20: n=32000 obs/head, 0.4m elapsed, ~1m left
+  shard 6/20: n=38400 obs/head, 0.4m elapsed, ~1m left
+  shard 7/20: n=44800 obs/head, 0.5m elapsed, ~1m left
+  shard 8/20: n=51200 obs/head, 0.6m elapsed, ~1m left
+  shard 9/20: n=57600 obs/head, 0.7m elapsed, ~1m left
+  shard 10/20: n=64000 obs/head, 0.7m elapsed, ~1m left
+  shard 11/20: n=70400 obs/head, 0.8m elapsed, ~1m left
+  shard 12/20: n=76800 obs/head, 0.9m elapsed, ~1m left
+  shard 13/20: n=83200 obs/head, 1.0m elapsed, ~1m left
+  shard 14/20: n=89600 obs/head, 1.1m elapsed, ~0m left
+  shard 15/20: n=96000 obs/head, 1.1m elapsed, ~0m left
+  shard 16/20: n=102400 obs/head, 1.2m elapsed, ~0m left
+  shard 17/20: n=108800 obs/head, 1.3m elapsed, ~0m left
+  shard 18/20: n=115200 obs/head, 1.3m elapsed, ~0m left
+  shard 19/20: n=121600 obs/head, 1.4m elapsed, ~0m left
+  shard 20/20: n=128000 obs/head, 1.5m elapsed, ~0m left
+
+solving ... (9.9 min so far)
+saved -> /root/kv-transfer/results/qwen3_4b_to_8b/probe_r2_n500.pt  (9.9 min)
+
+=== Stage A: single-source linear structure ===
+observations per head: 128000
+  k_content : best 0.687   layer-aligned mean 0.624
+  k_rope    : best 0.712   layer-aligned mean 0.634
+  v         : best 0.623   layer-aligned mean 0.517
+  RoPE stripping: K_content 0.624 vs K_rope 0.634
+
+  paper reference (Qwen3 14B->32B): best single-source K R^2 = 0.81
+Qwen/Qwen3-4B -> Qwen/Qwen3-8B
+500 sequences, 128000 observations per head
+
+=== k_content head-averaged R^2 ===  (min 0.08  max 0.69)
+      tgt 012345678901234567890123456789012345
+  src  0 --::.::..  .               ... .....
+  src  1 :%==-==-:::::.:........::::::::::-::
+  src  2 :+#====--::-::::......:::::::::::-::
+  src  3 :+=%=++=-----:::::.::::::::-:-:-:-:-
+  src  4 .+==#=+=-----::::..::::::::::-:::-::
+  src  5 .====%+=-----:-:::.::::-:::-:-:-:-:-
+  src  6 .+=+=+%+=====---::::::--------------
+  src  7 .=-===+%=====----::-::--------------
+  src  8 .----=+=%====-==--:-----------------
+  src  9  -----===#===-=---:-----------:-:-:-
+  src 10  -:---====#++-==--------------------
+  src 11  -----=====%+====------==----=------
+  src 12 .-:---====++%=++==-======--=-=------
+  src 13  ::::---===++#++==-=--===-----:-:-::
+  src 14  -:---====+++=%++=======+=====------
+  src 15  ::::-=-===++++%++=====+===--=------
+  src 16  :::::--=-====++%+=+=====-----:-:---
+  src 17  :.:::----====+++%++=====-------:---
+  src 18  :.:::----====++++%+++=++-=-----:--:
+  src 19  :::::----====+++++%+=+++===-=------
+  src 20  :::::----====+++==+%++++===-=------
+  src 21  ::::---=-====+++++++%+++=====------
+  src 22  -:-:-=-=-====+++==++=%++=====-=----
+  src 23  -:---======+=++===++++@+++===-=-===
+  src 24 .-:---=-=-==+=++===+++++%=+==+==-==-
+  src 25 .-:---=-=-===-==---====++%======-===
+  src 26 .-:---=-=-===-=========++=%==+==-===
+  src 27 .-:---=-=-===-==----====+==#====-===
+  src 28 .-----===-===-==---=====+==+%+======
+  src 29 .-:---=----==-==---=--=======#======
+  src 30 .-:---=----==----------=======#=====
+  src 31 .=----=----==-=-------=======+-#=+==
+  src 32 .-:----------:---::----==---====#===
+  src 33 .=----=----=----------=======+=+=%==
+  src 34 .-:-:--------:----:----===========#=
+  src 35 .-:-:--------:--:::::-------====-==*
+
+=== v head-averaged R^2 ===  (min 0.03  max 0.62)
+      tgt 012345678901234567890123456789012345
+  src  0 +-::.:..                .  ... ...  
+  src  1 -@==---:.. . .      .. ......: ..:. 
+  src  2 :=#=--::.. .....    .. ....... ...  
+  src  3 :==%-=-:.....:..    ..............  
+  src  4 :---%=::......      .. . .....  ..  
+  src  5 :--=-%:::....:..   ........... ...  
+  src  6 :-----%:........   ........... . .  
+  src  7 .::-:-:#:....:..   ...........      
+  src  8  .::::.:#....:...  ..........       
+  src  9  ..:.:..:*...:..  . ...... ..       
+  src 10  .........+.....  . ..     .        
+  src 11  ....:.....*.:.:...... ... ..       
+  src 12  ..:........*:::....:........       
+  src 13  .::.:.:::.::#--:::.::.......       
+  src 14  ..:.:..:..::-#-..:.::.......       
+  src 15  ..:.:..::.::--#:::::::......       
+  src 16    . . ......:::*:..::...   .       
+  src 17   .. . .....:::::*:..:....  .       
+  src 18   .. . ......:::.:*.::.......       
+  src 19  ............:::...*::.... ..       
+  src 20  .::.:..:...:-:-::::#-:::....       
+  src 21  ..:.:......:::-.:::-#.::....       
+  src 22  ............:.:....:.#..  .:       
+  src 23  :.:.:......::.:....::.%::.... .. . 
+  src 24 .::..:......::::....::.:%:.::: ::.: 
+  src 25 .:.:.:.......... ..... ::#..:...... 
+  src 26 ...:::..........  ...: ...#... .... 
+  src 27 .:::.:..........  ..:...:..#:...... 
+  src 28 .:::.:.......... .......::.:%.......
+  src 29 .::::::..  . .       . .:...:%.:-=:.
+  src 30  .....       .          .. ...* :.. 
+  src 31 .:...::.   . .       . .:....: #:-. 
+  src 32 .:.... .     .       . .:....-.:#:: 
+  src 33 .:...::.                ....:=.-:%..
+  src 34 .... .                  . ......:.* 
+  src 35  .....                      ..  .. =
+
+=== headline numbers ===
+  k_content : best 0.687   layer-aligned mean 0.624
+  k_rope    : best 0.712   layer-aligned mean 0.634
+  v         : best 0.623   layer-aligned mean 0.517
+
+  RoPE stripping: K_content 0.624 vs K_rope 0.634 (positive difference means stripping helps)
+
+=== best source layer per target layer (k_content) ===
+  tgt  0 <- src  0  (R^2 0.318)
+  tgt  4 <- src  4  (R^2 0.616)
+  tgt  8 <- src  8  (R^2 0.650)
+  tgt 12 <- src 12  (R^2 0.643)
+  tgt 16 <- src 16  (R^2 0.651)
+  tgt 20 <- src 20  (R^2 0.664)
+  tgt 24 <- src 24  (R^2 0.680)
+  tgt 28 <- src 28  (R^2 0.641)
+  tgt 32 <- src 32  (R^2 0.562)
+  layer-aligned in 36/36 target layers
+
+=== vs paper (Qwen3 14B->32B) ===
+  best single-source K R^2:  ours 0.687  paper 0.81
+
+  Partial linear structure: weaker than the paper's 3B+ pairs but
+  clearly non-trivial. Worth fitting top-k mappers to see how much
+  multi-source selection recovers.
+
+=== 2026-10-07 12:56:46 fit all-heads k=1 and k=8 ===
+calibration (500, 1024)  | 36 -> 36 layers, 8x128
+  reusing KV store /root/kv-transfer/results/kv/Qwen__Qwen3-4B/calib_500x1024_s0_st4 (500 items)
+  reusing KV store /root/kv-transfer/results/kv/Qwen__Qwen3-8B/calib_500x1024_s0_st4 (500 items)
+
+=== fitting k1 ===
+  sources per target layer: [1]
+  1 target-layer group(s) under 30 GB (all_heads)
+  group 1/1 (target layers 0-35) 0.5m
+  lam=0.01: mean R^2  K=0.705  V=0.603  -> mapper_k1_lam0.01_allheads.pt
+
+=== fitting k8 ===
+  sources per target layer: [8]
+  2 target-layer group(s) under 30 GB (all_heads)
+  K and V select different source layers in 36/36 target layers
+  group 1/2 (target layers 0-23) 1.0m
+  group 2/2 (target layers 24-35) 1.6m
+  lam=0.01: mean R^2  K=0.788  V=0.693  -> mapper_k8_lam0.01_allheads.pt
+
+=== 2026-10-07 12:59:03 held-out R^2 (fit on 18 of 20 shards, score on the last 2) ===
+calibration (500, 1024)  | 36 -> 36 layers, 8x128
+  reusing KV store /root/kv-transfer/results/kv/Qwen__Qwen3-4B/calib_500x1024_s0_st4 (500 items)
+  reusing KV store /root/kv-transfer/results/kv/Qwen__Qwen3-8B/calib_500x1024_s0_st4 (500 items)
+  holding out the last 2/20 shards for out-of-sample R^2
+
+=== fitting k1 ===
+  sources per target layer: [1]
+  1 target-layer group(s) under 15 GB (all_heads)
+  group 1/1 (target layers 0-35) 0.5m
+  lam=0.01: mean R^2  K=0.706  V=0.603  | held-out K=0.695  V=0.591  -> mapper_k1_lam0.01_allheads_ho2.pt
+
+=== fitting k8 ===
+  sources per target layer: [8]
+  3 target-layer group(s) under 15 GB (all_heads)
+  K and V select different source layers in 36/36 target layers
+  group 1/3 (target layers 0-11) 0.6m
+  group 2/3 (target layers 12-23) 1.2m
+  group 3/3 (target layers 24-35) 1.8m
+  lam=0.01: mean R^2  K=0.790  V=0.696  | held-out K=0.752  V=0.642  -> mapper_k8_lam0.01_allheads_ho2.pt
+
+saved -> /root/kv-transfer/results/qwen3_4b_to_8b/heldout_r2.json
+
+=== 2026-10-07 13:01:24 HellaSwag: standalone, oracle, zero-copy, all-heads k=1, all-heads k=8 ===
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Generating train split:   0%|          | 0/39905 [00:00<?, ? examples/s]Generating train split:  80%|████████  | 32000/39905 [00:00<00:00, 306990.38 examples/s]Generating train split: 100%|██████████| 39905/39905 [00:00<00:00, 277022.09 examples/s]
+Generating test split:   0%|          | 0/10003 [00:00<?, ? examples/s]Generating test split: 100%|██████████| 10003/10003 [00:00<00:00, 232321.42 examples/s]
+Generating validation split:   0%|          | 0/10042 [00:00<?, ? examples/s]Generating validation split: 100%|██████████| 10042/10042 [00:00<00:00, 227238.99 examples/s]
+hellaswag: 10042 docs, 10019 unique contexts, 494515 context tokens (15s)
+3 round(s), <= 203450 prefix tokens (~30 GB of source KV) each
+
+=== round 1/3: hellaswag[0..5183] ===
+  capturing Qwen/Qwen3-4B -> /root/kv-transfer/results/kv/Qwen__Qwen3-4B/task_hellaswag_10042_0-5183: 208/208 shards, ~30.0 GB
+loading Qwen/Qwen3-4B (bfloat16, cuda) ...
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights:   1%|▏         | 5/398 [00:00<00:08, 47.01it/s]Loading weights:  10%|▉         | 38/398 [00:00<00:01, 207.45it/s]Loading weights:  18%|█▊        | 71/398 [00:00<00:01, 252.05it/s]Loading weights:  26%|██▌       | 103/398 [00:00<00:01, 276.16it/s]Loading weights:  34%|███▍      | 135/398 [00:00<00:00, 289.45it/s]Loading weights:  41%|████▏     | 165/398 [00:00<00:00, 290.71it/s]Loading weights:  49%|████▉     | 196/398 [00:00<00:00, 294.48it/s]Loading weights:  57%|█████▋    | 227/398 [00:00<00:00, 299.28it/s]Loading weights:  65%|██████▍   | 258/398 [00:00<00:00, 298.92it/s]Loading weights:  73%|███████▎  | 291/398 [00:01<00:00, 304.04it/s]Loading weights:  81%|████████  | 323/398 [00:01<00:00, 304.94it/s]Loading weights:  90%|████████▉ | 357/398 [00:01<00:00, 311.12it/s]Loading weights:  98%|█████████▊| 390/398 [00:01<00:00, 316.59it/s]Loading weights: 100%|██████████| 398/398 [00:01<00:00, 294.22it/s]
+    shard 1/208  0.1m elapsed, ~17m left
+    shard 2/208  0.1m elapsed, ~11m left
+    shard 3/208  0.3m elapsed, ~22m left
+    shard 4/208  0.4m elapsed, ~18m left
+    shard 5/208  0.4m elapsed, ~15m left
+    shard 6/208  0.4m elapsed, ~13m left
+    shard 7/208  0.4m elapsed, ~13m left
+    shard 8/208  0.5m elapsed, ~12m left
+    shard 9/208  0.5m elapsed, ~11m left
+    shard 10/208  0.5m elapsed, ~10m left
+    shard 11/208  0.6m elapsed, ~11m left
+    shard 12/208  0.6m elapsed, ~10m left
+    shard 13/208  0.7m elapsed, ~10m left
+    shard 14/208  0.7m elapsed, ~9m left
+    shard 15/208  0.7m elapsed, ~9m left
+    shard 16/208  0.7m elapsed, ~9m left
+    shard 17/208  0.8m elapsed, ~9m left
+    shard 18/208  0.8m elapsed, ~8m left
+    shard 19/208  0.8m elapsed, ~8m left
+    shard 20/208  0.8m elapsed, ~8m left
+    shard 21/208  0.9m elapsed, ~8m left
+    shard 22/208  0.9m elapsed, ~8m left
+    shard 23/208  0.9m elapsed, ~7m left
+    shard 24/208  0.9m elapsed, ~7m left
+    shard 25/208  1.0m elapsed, ~7m left
+    shard 26/208  1.0m elapsed, ~7m left
+    shard 27/208  1.0m elapsed, ~7m left
+    shard 28/208  1.1m elapsed, ~7m left
+    shard 29/208  1.1m elapsed, ~7m left
+    shard 30/208  1.2m elapsed, ~7m left
+    shard 31/208  1.2m elapsed, ~7m left
+    shard 32/208  1.2m elapsed, ~7m left
+    shard 33/208  1.3m elapsed, ~7m left
+    shard 34/208  1.4m elapsed, ~7m left
+    shard 35/208  1.4m elapsed, ~7m left
+    shard 36/208  1.5m elapsed, ~7m left
+    shard 37/208  1.5m elapsed, ~7m left
+    shard 38/208  1.5m elapsed, ~7m left
+    shard 39/208  1.5m elapsed, ~7m left
+    shard 40/208  1.6m elapsed, ~7m left
+    shard 41/208  1.6m elapsed, ~7m left
+    shard 42/208  1.7m elapsed, ~7m left
+    shard 43/208  1.7m elapsed, ~6m left
+    shard 44/208  1.7m elapsed, ~6m left
+    shard 45/208  1.7m elapsed, ~6m left
+    shard 46/208  1.8m elapsed, ~6m left
+    shard 47/208  1.9m elapsed, ~6m left
+    shard 48/208  1.9m elapsed, ~6m left
+    shard 49/208  1.9m elapsed, ~6m left
+    shard 50/208  1.9m elapsed, ~6m left
+    shard 51/208  2.0m elapsed, ~6m left
+    shard 52/208  2.1m elapsed, ~6m left
+    shard 53/208  2.1m elapsed, ~6m left
+    shard 54/208  2.1m elapsed, ~6m left
+    shard 55/208  2.1m elapsed, ~6m left
+    shard 56/208  2.2m elapsed, ~6m left
+    shard 57/208  2.2m elapsed, ~6m left
+    shard 58/208  2.2m elapsed, ~6m left
+    shard 59/208  2.3m elapsed, ~6m left
+    shard 60/208  2.3m elapsed, ~6m left
+    shard 61/208  2.3m elapsed, ~6m left
+    shard 62/208  2.4m elapsed, ~6m left
+    shard 63/208  2.4m elapsed, ~6m left
+    shard 64/208  2.4m elapsed, ~5m left
+    shard 65/208  2.5m elapsed, ~5m left
+    shard 66/208  2.5m elapsed, ~5m left
+    shard 67/208  2.6m elapsed, ~5m left
+    shard 68/208  2.6m elapsed, ~5m left
+    shard 69/208  2.7m elapsed, ~5m left
+    shard 70/208  2.7m elapsed, ~5m left
+    shard 71/208  2.7m elapsed, ~5m left
+    shard 72/208  2.7m elapsed, ~5m left
+    shard 73/208  2.7m elapsed, ~5m left
+    shard 74/208  2.8m elapsed, ~5m left
+    shard 75/208  2.8m elapsed, ~5m left
+    shard 76/208  2.8m elapsed, ~5m left
+    shard 77/208  2.9m elapsed, ~5m left
+    shard 78/208  2.9m elapsed, ~5m left
+    shard 79/208  3.0m elapsed, ~5m left
+    shard 80/208  3.1m elapsed, ~5m left
+    shard 81/208  3.2m elapsed, ~5m left
+    shard 82/208  3.2m elapsed, ~5m left
+    shard 83/208  3.3m elapsed, ~5m left
+    shard 84/208  3.3m elapsed, ~5m left
+    shard 85/208  3.3m elapsed, ~5m left
+    shard 86/208  3.4m elapsed, ~5m left
+    shard 87/208  3.4m elapsed, ~5m left
+    shard 88/208  3.5m elapsed, ~5m left
+    shard 89/208  3.6m elapsed, ~5m left
+    shard 90/208  3.6m elapsed, ~5m left
+    shard 91/208  3.7m elapsed, ~5m left
+    shard 92/208  3.7m elapsed, ~5m left
+    shard 93/208  3.7m elapsed, ~5m left
+    shard 94/208  3.7m elapsed, ~5m left
+    shard 95/208  3.8m elapsed, ~5m left
+    shard 96/208  3.8m elapsed, ~4m left
+    shard 97/208  3.8m elapsed, ~4m left
+    shard 98/208  3.9m elapsed, ~4m left
+    shard 99/208  3.9m elapsed, ~4m left
+    shard 100/208  4.0m elapsed, ~4m left
+    shard 101/208  4.0m elapsed, ~4m left
+    shard 102/208  4.1m elapsed, ~4m left
+    shard 103/208  4.1m elapsed, ~4m left
+    shard 104/208  4.2m elapsed, ~4m left
+    shard 105/208  4.3m elapsed, ~4m left
+    shard 106/208  4.3m elapsed, ~4m left
+    shard 107/208  4.3m elapsed, ~4m left
+    shard 108/208  4.4m elapsed, ~4m left
+    shard 109/208  4.4m elapsed, ~4m left
+    shard 110/208  4.5m elapsed, ~4m left
+    shard 111/208  4.5m elapsed, ~4m left
+    shard 112/208  4.6m elapsed, ~4m left
+    shard 113/208  4.7m elapsed, ~4m left
+    shard 114/208  4.7m elapsed, ~4m left
+    shard 115/208  4.8m elapsed, ~4m left
+    shard 116/208  4.8m elapsed, ~4m left
+    shard 117/208  4.9m elapsed, ~4m left
+    shard 118/208  4.9m elapsed, ~4m left
+    shard 119/208  4.9m elapsed, ~4m left
+    shard 120/208  5.0m elapsed, ~4m left
+    shard 121/208  5.0m elapsed, ~4m left
+    shard 122/208  5.1m elapsed, ~4m left
+    shard 123/208  5.1m elapsed, ~4m left
+    shard 124/208  5.2m elapsed, ~3m left
+    shard 125/208  5.2m elapsed, ~3m left
+    shard 126/208  5.2m elapsed, ~3m left
+    shard 127/208  5.2m elapsed, ~3m left
+    shard 128/208  5.3m elapsed, ~3m left
+    shard 129/208  5.4m elapsed, ~3m left
+    shard 130/208  5.4m elapsed, ~3m left
+    shard 131/208  5.5m elapsed, ~3m left
+    shard 132/208  5.6m elapsed, ~3m left
+    shard 133/208  5.7m elapsed, ~3m left
+    shard 134/208  5.8m elapsed, ~3m left
+    shard 135/208  5.8m elapsed, ~3m left
+    shard 136/208  5.9m elapsed, ~3m left
+    shard 137/208  5.9m elapsed, ~3m left
+    shard 138/208  6.0m elapsed, ~3m left
+    shard 139/208  6.0m elapsed, ~3m left
+    shard 140/208  6.2m elapsed, ~3m left
+    shard 141/208  6.2m elapsed, ~3m left
+    shard 142/208  6.4m elapsed, ~3m left
+    shard 143/208  6.5m elapsed, ~3m left
+    shard 144/208  6.5m elapsed, ~3m left
+    shard 145/208  6.6m elapsed, ~3m left
+    shard 146/208  6.7m elapsed, ~3m left
+    shard 147/208  6.7m elapsed, ~3m left
+    shard 148/208  6.8m elapsed, ~3m left
+    shard 149/208  7.0m elapsed, ~3m left
+    shard 150/208  7.1m elapsed, ~3m left
+    shard 151/208  7.1m elapsed, ~3m left
+    shard 152/208  7.2m elapsed, ~3m left
+    shard 153/208  7.2m elapsed, ~3m left
+    shard 154/208  7.3m elapsed, ~3m left
+    shard 155/208  7.4m elapsed, ~3m left
+    shard 156/208  7.5m elapsed, ~3m left
+    shard 157/208  7.6m elapsed, ~2m left
+    shard 158/208  7.6m elapsed, ~2m left
+    shard 159/208  7.7m elapsed, ~2m left
+    shard 160/208  7.8m elapsed, ~2m left
+    shard 161/208  7.9m elapsed, ~2m left
+    shard 162/208  7.9m elapsed, ~2m left
+    shard 163/208  7.9m elapsed, ~2m left
+    shard 164/208  8.0m elapsed, ~2m left
+    shard 165/208  8.1m elapsed, ~2m left
+    shard 166/208  8.1m elapsed, ~2m left
+    shard 167/208  8.2m elapsed, ~2m left
+    shard 168/208  8.2m elapsed, ~2m left
+    shard 169/208  8.3m elapsed, ~2m left
+    shard 170/208  8.3m elapsed, ~2m left
+    shard 171/208  8.4m elapsed, ~2m left
+    shard 172/208  8.4m elapsed, ~2m left
+    shard 173/208  8.5m elapsed, ~2m left
+    shard 174/208  8.5m elapsed, ~2m left
+    shard 175/208  8.6m elapsed, ~2m left
+    shard 176/208  8.6m elapsed, ~2m left
+    shard 177/208  8.8m elapsed, ~2m left
+    shard 178/208  8.8m elapsed, ~1m left
+    shard 179/208  8.9m elapsed, ~1m left
+    shard 180/208  9.0m elapsed, ~1m left
+    shard 181/208  9.0m elapsed, ~1m left
+    shard 182/208  9.2m elapsed, ~1m left
+    shard 183/208  9.2m elapsed, ~1m left
+    shard 184/208  9.3m elapsed, ~1m left
+    shard 185/208  9.3m elapsed, ~1m left
+    shard 186/208  9.4m elapsed, ~1m left
+    shard 187/208  9.5m elapsed, ~1m left
+    shard 188/208  9.6m elapsed, ~1m left
+    shard 189/208  9.6m elapsed, ~1m left
+    shard 190/208  9.7m elapsed, ~1m left
+    shard 191/208  9.7m elapsed, ~1m left
+    shard 192/208  9.8m elapsed, ~1m left
+    shard 193/208  9.9m elapsed, ~1m left
+    shard 194/208  9.9m elapsed, ~1m left
+    shard 195/208  10.0m elapsed, ~1m left
+    shard 196/208  10.1m elapsed, ~1m left
+    shard 197/208  10.2m elapsed, ~1m left
+    shard 198/208  10.2m elapsed, ~1m left
+    shard 199/208  10.3m elapsed, ~0m left
+    shard 200/208  10.3m elapsed, ~0m left
+    shard 201/208  10.5m elapsed, ~0m left
+    shard 202/208  10.6m elapsed, ~0m left
+    shard 203/208  10.6m elapsed, ~0m left
+    shard 204/208  10.7m elapsed, ~0m left
+    shard 205/208  10.7m elapsed, ~0m left
+    shard 206/208  10.8m elapsed, ~0m left
+    shard 207/208  10.8m elapsed, ~0m left
+    shard 208/208  10.9m elapsed, ~0m left
+loading Qwen/Qwen3-8B (bfloat16, cuda) ...
+Loading weights:   0%|          | 0/399 [00:00<?, ?it/s]Loading weights:   0%|          | 1/399 [00:00<01:03,  6.25it/s]Loading weights:   1%|          | 2/399 [00:00<00:58,  6.82it/s]Loading weights:   6%|▌         | 24/399 [00:00<00:04, 84.39it/s]Loading weights:  10%|▉         | 39/399 [00:00<00:03, 105.79it/s]Loading weights:  15%|█▌        | 60/399 [00:00<00:02, 138.95it/s]Loading weights:  20%|██        | 81/399 [00:00<00:02, 156.55it/s]Loading weights:  25%|██▌       | 101/399 [00:00<00:01, 169.53it/s]Loading weights:  30%|██▉       | 119/399 [00:00<00:01, 159.98it/s]Loading weights:  34%|███▍      | 137/399 [00:01<00:01, 159.56it/s]Loading weights:  40%|███▉      | 158/399 [00:01<00:01, 172.02it/s]Loading weights:  44%|████▍     | 176/399 [00:01<00:01, 173.26it/s]Loading weights:  49%|████▊     | 194/399 [00:01<00:01, 164.66it/s]Loading weights:  54%|█████▎    | 214/399 [00:01<00:01, 168.06it/s]Loading weights:  59%|█████▉    | 235/399 [00:01<00:00, 174.89it/s]Loading weights:  63%|██████▎   | 253/399 [00:01<00:00, 175.25it/s]Loading weights:  68%|██████▊   | 271/399 [00:01<00:00, 168.22it/s]Loading weights:  73%|███████▎  | 291/399 [00:01<00:00, 174.69it/s]Loading weights:  78%|███████▊  | 312/399 [00:02<00:00, 179.35it/s]Loading weights:  83%|████████▎ | 331/399 [00:02<00:00, 173.96it/s]Loading weights:  87%|████████▋ | 349/399 [00:02<00:00, 169.14it/s]Loading weights:  92%|█████████▏| 367/399 [00:02<00:00, 168.49it/s]Loading weights:  97%|█████████▋| 389/399 [00:02<00:00, 181.21it/s]Loading weights: 100%|██████████| 399/399 [00:02<00:00, 157.87it/s]
+  standalone               hellaswag      5184 contexts ...
+      1000/5184 contexts
+      2000/5184 contexts
+      3000/5184 contexts
+      4000/5184 contexts
+      5000/5184 contexts
+    (173s)
+  oracle                   hellaswag      5184 contexts ...
+      1000/5184 contexts
+      2000/5184 contexts
+      3000/5184 contexts
+      4000/5184 contexts
+      5000/5184 contexts
+    (136s)
+  zero_copy                hellaswag      5184 contexts ...
+      1000/5184 contexts
+      2000/5184 contexts
+      3000/5184 contexts
+      4000/5184 contexts
+      5000/5184 contexts
+    (562s)
+  mean_pred                hellaswag      5184 contexts ...
+      1000/5184 contexts
+      2000/5184 contexts
+      3000/5184 contexts
+      4000/5184 contexts
+      5000/5184 contexts
+    (301s)
+  mapper_k1_lam0.01_allheads hellaswag      5184 contexts ...
+      1000/5184 contexts
+      2000/5184 contexts
+      3000/5184 contexts
+      4000/5184 contexts
+      5000/5184 contexts
+    (432s)
+  mapper_k8_lam0.01_allheads hellaswag      5184 contexts ...
+      1000/5184 contexts
+      2000/5184 contexts
+      3000/5184 contexts
+      4000/5184 contexts
+      5000/5184 contexts
+    (530s)
+
+=== round 2/3: hellaswag[5184..8690] ===
+  capturing Qwen/Qwen3-4B -> /root/kv-transfer/results/kv/Qwen__Qwen3-4B/task_hellaswag_10042_5184-8690: 141/141 shards, ~30.0 GB
+loading Qwen/Qwen3-4B (bfloat16, cuda) ...
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights:   0%|          | 1/398 [00:00<00:44,  9.01it/s]Loading weights:  12%|█▏        | 49/398 [00:00<00:01, 268.39it/s]Loading weights:  23%|██▎       | 92/398 [00:00<00:00, 329.86it/s]Loading weights:  33%|███▎      | 132/398 [00:00<00:00, 352.82it/s]Loading weights:  42%|████▏     | 169/398 [00:00<00:00, 354.24it/s]Loading weights:  53%|█████▎    | 211/398 [00:00<00:00, 368.93it/s]Loading weights:  63%|██████▎   | 251/398 [00:00<00:00, 376.89it/s]Loading weights:  73%|███████▎  | 290/398 [00:00<00:00, 380.72it/s]Loading weights:  84%|████████▎ | 333/398 [00:00<00:00, 390.05it/s]Loading weights:  94%|█████████▎| 373/398 [00:01<00:00, 388.05it/s]Loading weights: 100%|██████████| 398/398 [00:01<00:00, 360.69it/s]
+    shard 1/141  0.1m elapsed, ~13m left
+    shard 2/141  0.1m elapsed, ~10m left
+    shard 3/141  0.2m elapsed, ~9m left
+    shard 4/141  0.2m elapsed, ~8m left
+    shard 5/141  0.3m elapsed, ~7m left
+    shard 6/141  0.5m elapsed, ~11m left
+    shard 7/141  0.6m elapsed, ~11m left
+    shard 8/141  0.6m elapsed, ~10m left
+    shard 9/141  0.6m elapsed, ~9m left
+    shard 10/141  0.7m elapsed, ~9m left
+    shard 11/141  0.7m elapsed, ~9m left
+    shard 12/141  0.8m elapsed, ~9m left
+    shard 13/141  0.9m elapsed, ~9m left
+    shard 14/141  1.0m elapsed, ~9m left
+    shard 15/141  1.0m elapsed, ~8m left
+    shard 16/141  1.1m elapsed, ~8m left
+    shard 17/141  1.1m elapsed, ~8m left
+    shard 18/141  1.2m elapsed, ~8m left
+    shard 19/141  1.2m elapsed, ~8m left
+    shard 20/141  1.3m elapsed, ~8m left
+    shard 21/141  1.3m elapsed, ~8m left
+    shard 22/141  1.3m elapsed, ~7m left
+    shard 23/141  1.4m elapsed, ~7m left
+    shard 24/141  1.4m elapsed, ~7m left
+    shard 25/141  1.4m elapsed, ~7m left
+    shard 26/141  1.5m elapsed, ~7m left
+    shard 27/141  1.6m elapsed, ~7m left
+    shard 28/141  1.6m elapsed, ~7m left
+    shard 29/141  1.7m elapsed, ~7m left
+    shard 30/141  1.8m elapsed, ~7m left
+    shard 31/141  1.8m elapsed, ~6m left
+    shard 32/141  1.8m elapsed, ~6m left
+    shard 33/141  2.0m elapsed, ~6m left
+    shard 34/141  2.0m elapsed, ~6m left
+    shard 35/141  2.1m elapsed, ~6m left
+    shard 36/141  2.2m elapsed, ~6m left
+    shard 37/141  2.2m elapsed, ~6m left
+    shard 38/141  2.3m elapsed, ~6m left
+    shard 39/141  2.3m elapsed, ~6m left
+    shard 40/141  2.3m elapsed, ~6m left
+    shard 41/141  2.4m elapsed, ~6m left
+    shard 42/141  2.5m elapsed, ~6m left
+    shard 43/141  2.6m elapsed, ~6m left
+    shard 44/141  2.6m elapsed, ~6m left
+    shard 45/141  2.7m elapsed, ~6m left
+    shard 46/141  2.7m elapsed, ~6m left
+    shard 47/141  2.7m elapsed, ~5m left
+    shard 48/141  2.8m elapsed, ~5m left
+    shard 49/141  2.9m elapsed, ~5m left
+    shard 50/141  2.9m elapsed, ~5m left
+    shard 51/141  3.0m elapsed, ~5m left
+    shard 52/141  3.0m elapsed, ~5m left
+    shard 53/141  3.2m elapsed, ~5m left
+    shard 54/141  3.2m elapsed, ~5m left
+    shard 55/141  3.3m elapsed, ~5m left
+    shard 56/141  3.3m elapsed, ~5m left
+    shard 57/141  3.4m elapsed, ~5m left
+    shard 58/141  3.4m elapsed, ~5m left
+    shard 59/141  3.4m elapsed, ~5m left
+    shard 60/141  3.5m elapsed, ~5m left
+    shard 61/141  3.5m elapsed, ~5m left
+    shard 62/141  3.6m elapsed, ~5m left
+    shard 63/141  3.6m elapsed, ~4m left
+    shard 64/141  3.7m elapsed, ~4m left
+    shard 65/141  3.7m elapsed, ~4m left
+    shard 66/141  3.7m elapsed, ~4m left
+    shard 67/141  3.7m elapsed, ~4m left
+    shard 68/141  3.8m elapsed, ~4m left
+    shard 69/141  3.9m elapsed, ~4m left
+    shard 70/141  3.9m elapsed, ~4m left
+    shard 71/141  3.9m elapsed, ~4m left
+    shard 72/141  4.0m elapsed, ~4m left
+    shard 73/141  4.0m elapsed, ~4m left
+    shard 74/141  4.1m elapsed, ~4m left
+    shard 75/141  4.1m elapsed, ~4m left
+    shard 76/141  4.2m elapsed, ~4m left
+    shard 77/141  4.2m elapsed, ~3m left
+    shard 78/141  4.3m elapsed, ~3m left
+    shard 79/141  4.3m elapsed, ~3m left
+    shard 80/141  4.3m elapsed, ~3m left
+    shard 81/141  4.4m elapsed, ~3m left
+    shard 82/141  4.4m elapsed, ~3m left
+    shard 83/141  4.4m elapsed, ~3m left
+    shard 84/141  4.5m elapsed, ~3m left
+    shard 85/141  4.6m elapsed, ~3m left
+    shard 86/141  4.6m elapsed, ~3m left
+    shard 87/141  4.7m elapsed, ~3m left
+    shard 88/141  4.7m elapsed, ~3m left
+    shard 89/141  4.7m elapsed, ~3m left
+    shard 90/141  4.8m elapsed, ~3m left
+    shard 91/141  4.8m elapsed, ~3m left
+    shard 92/141  4.8m elapsed, ~3m left
+    shard 93/141  4.9m elapsed, ~3m left
+    shard 94/141  5.0m elapsed, ~3m left
+    shard 95/141  5.1m elapsed, ~2m left
+    shard 96/141  5.1m elapsed, ~2m left
+    shard 97/141  5.2m elapsed, ~2m left
+    shard 98/141  5.2m elapsed, ~2m left
+    shard 99/141  5.2m elapsed, ~2m left
+    shard 100/141  5.3m elapsed, ~2m left
+    shard 101/141  5.3m elapsed, ~2m left
+    shard 102/141  5.4m elapsed, ~2m left
+    shard 103/141  5.5m elapsed, ~2m left
+    shard 104/141  5.5m elapsed, ~2m left
+    shard 105/141  5.5m elapsed, ~2m left
+    shard 106/141  5.5m elapsed, ~2m left
+    shard 107/141  5.6m elapsed, ~2m left
+    shard 108/141  5.6m elapsed, ~2m left
+    shard 109/141  5.6m elapsed, ~2m left
+    shard 110/141  5.7m elapsed, ~2m left
+    shard 111/141  5.7m elapsed, ~2m left
+    shard 112/141  5.8m elapsed, ~1m left
+    shard 113/141  5.8m elapsed, ~1m left
+    shard 114/141  5.8m elapsed, ~1m left
+    shard 115/141  5.9m elapsed, ~1m left
+    shard 116/141  6.0m elapsed, ~1m left
+    shard 117/141  6.1m elapsed, ~1m left
+    shard 118/141  6.1m elapsed, ~1m left
+    shard 119/141  6.1m elapsed, ~1m left
+    shard 120/141  6.1m elapsed, ~1m left
+    shard 121/141  6.2m elapsed, ~1m left
+    shard 122/141  6.3m elapsed, ~1m left
+    shard 123/141  6.3m elapsed, ~1m left
+    shard 124/141  6.4m elapsed, ~1m left
+    shard 125/141  6.4m elapsed, ~1m left
+    shard 126/141  6.5m elapsed, ~1m left
+    shard 127/141  6.5m elapsed, ~1m left
+    shard 128/141  6.6m elapsed, ~1m left
+    shard 129/141  6.6m elapsed, ~1m left
+    shard 130/141  6.6m elapsed, ~1m left
+    shard 131/141  6.7m elapsed, ~1m left
+    shard 132/141  6.8m elapsed, ~0m left
+    shard 133/141  6.8m elapsed, ~0m left
+    shard 134/141  6.8m elapsed, ~0m left
+    shard 135/141  6.9m elapsed, ~0m left
+    shard 136/141  6.9m elapsed, ~0m left
+    shard 137/141  7.0m elapsed, ~0m left
+    shard 138/141  7.0m elapsed, ~0m left
+    shard 139/141  7.1m elapsed, ~0m left
+    shard 140/141  7.1m elapsed, ~0m left
+    shard 141/141  7.1m elapsed, ~0m left
+loading Qwen/Qwen3-8B (bfloat16, cuda) ...
+Loading weights:   0%|          | 0/399 [00:00<?, ?it/s]Loading weights:   0%|          | 1/399 [00:00<00:40,  9.75it/s]Loading weights:   1%|          | 3/399 [00:00<00:26, 14.73it/s]Loading weights:   7%|▋         | 28/399 [00:00<00:03, 111.47it/s]Loading weights:  13%|█▎        | 50/399 [00:00<00:02, 149.72it/s]Loading weights:  18%|█▊        | 72/399 [00:00<00:01, 171.18it/s]Loading weights:  24%|██▎       | 94/399 [00:00<00:01, 183.28it/s]Loading weights:  29%|██▉       | 116/399 [00:00<00:01, 185.65it/s]Loading weights:  34%|███▍      | 137/399 [00:00<00:01, 192.14it/s]Loading weights:  40%|███▉      | 159/399 [00:00<00:01, 196.35it/s]Loading weights:  45%|████▌     | 181/399 [00:01<00:01, 198.98it/s]Loading weights:  51%|█████     | 203/399 [00:01<00:00, 198.23it/s]Loading weights:  56%|█████▋    | 225/399 [00:01<00:00, 196.84it/s]Loading weights:  62%|██████▏   | 247/399 [00:01<00:00, 203.07it/s]Loading weights:  67%|██████▋   | 269/399 [00:01<00:00, 203.79it/s]Loading weights:  73%|███████▎  | 291/399 [00:01<00:00, 204.63it/s]Loading weights:  78%|███████▊  | 313/399 [00:01<00:00, 202.92it/s]Loading weights:  84%|████████▎ | 334/399 [00:01<00:00, 196.21it/s]Loading weights:  89%|████████▉ | 357/399 [00:01<00:00, 202.02it/s]Loading weights:  95%|█████████▌| 380/399 [00:02<00:00, 205.17it/s]Loading weights: 100%|██████████| 399/399 [00:02<00:00, 188.80it/s]
+  standalone               hellaswag      3507 contexts ...
+      1000/3507 contexts
+      2000/3507 contexts
+      3000/3507 contexts
+    (153s)
+  oracle                   hellaswag      3507 contexts ...
+      1000/3507 contexts
+      2000/3507 contexts
+      3000/3507 contexts
+    (120s)
+  zero_copy                hellaswag      3507 contexts ...
+      1000/3507 contexts
+      2000/3507 contexts
+      3000/3507 contexts
+    (413s)
+  mean_pred                hellaswag      3507 contexts ...
+      1000/3507 contexts
+      2000/3507 contexts
+      3000/3507 contexts
+    (238s)
+  mapper_k1_lam0.01_allheads hellaswag      3507 contexts ...
+      1000/3507 contexts
+      2000/3507 contexts
+      3000/3507 contexts
+    (398s)
+  mapper_k8_lam0.01_allheads hellaswag      3507 contexts ...
+      1000/3507 contexts
+      2000/3507 contexts
+      3000/3507 contexts
+    (422s)
+
+=== round 3/3: hellaswag[8691..10018] ===
+  capturing Qwen/Qwen3-4B -> /root/kv-transfer/results/kv/Qwen__Qwen3-4B/task_hellaswag_10042_8691-10018: 54/54 shards, ~11.5 GB
+loading Qwen/Qwen3-4B (bfloat16, cuda) ...
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights:   0%|          | 1/398 [00:00<01:11,  5.53it/s]Loading weights:   8%|▊         | 32/398 [00:00<00:02, 138.94it/s]Loading weights:  17%|█▋        | 67/398 [00:00<00:01, 219.71it/s]Loading weights:  26%|██▌       | 102/398 [00:00<00:01, 261.44it/s]Loading weights:  34%|███▍      | 136/398 [00:00<00:00, 280.08it/s]Loading weights:  42%|████▏     | 169/398 [00:00<00:00, 295.65it/s]Loading weights:  51%|█████     | 203/398 [00:00<00:00, 306.75it/s]Loading weights:  60%|██████    | 240/398 [00:00<00:00, 325.09it/s]Loading weights:  69%|██████▉   | 275/398 [00:01<00:00, 332.17it/s]Loading weights:  78%|███████▊  | 311/398 [00:01<00:00, 326.58it/s]Loading weights:  87%|████████▋ | 346/398 [00:01<00:00, 329.78it/s]Loading weights:  96%|█████████▋| 384/398 [00:01<00:00, 341.98it/s]Loading weights: 100%|██████████| 398/398 [00:01<00:00, 292.64it/s]
+    shard 1/54  0.0m elapsed, ~2m left
+    shard 2/54  0.1m elapsed, ~2m left
+    shard 3/54  0.1m elapsed, ~2m left
+    shard 4/54  0.1m elapsed, ~2m left
+    shard 5/54  0.2m elapsed, ~2m left
+    shard 6/54  0.2m elapsed, ~2m left
+    shard 7/54  0.3m elapsed, ~2m left
+    shard 8/54  0.3m elapsed, ~2m left
+    shard 9/54  0.3m elapsed, ~2m left
+    shard 10/54  0.4m elapsed, ~2m left
+    shard 11/54  0.4m elapsed, ~2m left
+    shard 12/54  0.4m elapsed, ~2m left
+    shard 13/54  0.5m elapsed, ~1m left
+    shard 14/54  0.5m elapsed, ~2m left
+    shard 15/54  0.6m elapsed, ~2m left
+    shard 16/54  0.6m elapsed, ~1m left
+    shard 17/54  0.6m elapsed, ~1m left
+    shard 18/54  0.7m elapsed, ~1m left
+    shard 19/54  0.7m elapsed, ~1m left
+    shard 20/54  0.7m elapsed, ~1m left
+    shard 21/54  0.8m elapsed, ~1m left
+    shard 22/54  0.8m elapsed, ~1m left
+    shard 23/54  0.9m elapsed, ~1m left
+    shard 24/54  0.9m elapsed, ~1m left
+    shard 25/54  1.0m elapsed, ~1m left
+    shard 26/54  1.0m elapsed, ~1m left
+    shard 27/54  1.1m elapsed, ~1m left
+    shard 28/54  1.1m elapsed, ~1m left
+    shard 29/54  1.2m elapsed, ~1m left
+    shard 30/54  1.2m elapsed, ~1m left
+    shard 31/54  1.3m elapsed, ~1m left
+    shard 32/54  1.3m elapsed, ~1m left
+    shard 33/54  1.3m elapsed, ~1m left
+    shard 34/54  1.4m elapsed, ~1m left
+    shard 35/54  1.4m elapsed, ~1m left
+    shard 36/54  1.4m elapsed, ~1m left
+    shard 37/54  1.5m elapsed, ~1m left
+    shard 38/54  1.5m elapsed, ~1m left
+    shard 39/54  1.6m elapsed, ~1m left
+    shard 40/54  1.6m elapsed, ~1m left
+    shard 41/54  1.7m elapsed, ~1m left
+    shard 42/54  1.7m elapsed, ~0m left
+    shard 43/54  1.7m elapsed, ~0m left
+    shard 44/54  1.7m elapsed, ~0m left
+    shard 45/54  1.8m elapsed, ~0m left
+    shard 46/54  1.8m elapsed, ~0m left
+    shard 47/54  1.9m elapsed, ~0m left
+    shard 48/54  1.9m elapsed, ~0m left
+    shard 49/54  1.9m elapsed, ~0m left
+    shard 50/54  1.9m elapsed, ~0m left
+    shard 51/54  2.0m elapsed, ~0m left
+    shard 52/54  2.0m elapsed, ~0m left
+    shard 53/54  2.1m elapsed, ~0m left
+    shard 54/54  2.1m elapsed, ~0m left
+loading Qwen/Qwen3-8B (bfloat16, cuda) ...
+Loading weights:   0%|          | 0/399 [00:00<?, ?it/s]Loading weights:   0%|          | 1/399 [00:00<01:19,  5.02it/s]Loading weights:   7%|▋         | 28/399 [00:00<00:03, 111.70it/s]Loading weights:  12%|█▏        | 49/399 [00:00<00:02, 147.42it/s]Loading weights:  18%|█▊        | 72/399 [00:00<00:01, 173.74it/s]Loading weights:  24%|██▎       | 94/399 [00:00<00:01, 187.73it/s]Loading weights:  29%|██▉       | 116/399 [00:00<00:01, 192.99it/s]Loading weights:  35%|███▍      | 138/399 [00:00<00:01, 193.85it/s]Loading weights:  40%|███▉      | 159/399 [00:00<00:01, 195.75it/s]Loading weights:  46%|████▋     | 185/399 [00:01<00:01, 211.58it/s]Loading weights:  52%|█████▏    | 207/399 [00:01<00:00, 210.93it/s]Loading weights:  57%|█████▋    | 229/399 [00:01<00:00, 207.45it/s]Loading weights:  63%|██████▎   | 250/399 [00:01<00:00, 207.64it/s]Loading weights:  68%|██████▊   | 271/399 [00:01<00:00, 205.34it/s]Loading weights:  73%|███████▎  | 292/399 [00:01<00:00, 203.67it/s]Loading weights:  79%|███████▊  | 314/399 [00:01<00:00, 204.89it/s]Loading weights:  84%|████████▍ | 336/399 [00:01<00:00, 205.21it/s]Loading weights:  90%|████████▉ | 358/399 [00:01<00:00, 206.33it/s]Loading weights:  95%|█████████▌| 380/399 [00:01<00:00, 206.95it/s]Loading weights: 100%|██████████| 399/399 [00:02<00:00, 194.36it/s]
+  standalone               hellaswag      1328 contexts ...
+      1000/1328 contexts
+  standalone               hellaswag      acc_norm = 0.7494
+    (58s)
+  oracle                   hellaswag      1328 contexts ...
+      1000/1328 contexts
+  oracle                   hellaswag      acc_norm = 0.7501
+    (45s)
+  zero_copy                hellaswag      1328 contexts ...
+      1000/1328 contexts
+  zero_copy                hellaswag      acc_norm = 0.6879
+    (165s)
+  mean_pred                hellaswag      1328 contexts ...
+      1000/1328 contexts
+  mean_pred                hellaswag      acc_norm = 0.3227
+    (92s)
+  mapper_k1_lam0.01_allheads hellaswag      1328 contexts ...
+      1000/1328 contexts
+  mapper_k1_lam0.01_allheads hellaswag      acc_norm = 0.6963
+    (173s)
+  mapper_k8_lam0.01_allheads hellaswag      1328 contexts ...
+      1000/1328 contexts
+  mapper_k8_lam0.01_allheads hellaswag      acc_norm = 0.7156
+    (151s)
+
+=== retention vs standalone (%) ===
+  config                        hellaswag     avg
+  standalone                        100.0   100.0
+  oracle                            100.1   100.1
+  zero_copy                          91.8    91.8
+  mean_pred                          43.1    43.1
+  mapper_k1_lam0.01_allheads           92.9    92.9
+  mapper_k8_lam0.01_allheads           95.5    95.5
+
+saved -> /root/kv-transfer/results/qwen3_4b_to_8b/eval_tasks.json
+
+=== 2026-10-07 14:38:12 paired test ===
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+hellaswag: 10042 questions, metric=acc_norm, raw=/root/kv-transfer/results/qwen3_4b_to_8b/eval_tasks.partial.json
+
+  configuration                   acc_norm
+  standalone                        0.7494
+  oracle                            0.7501
+  zero_copy                         0.6879
+  mean_pred                         0.3227
+  mapper_k1_lam0.01_allheads        0.6963
+  mapper_k8_lam0.01_allheads        0.7156
+
+  A                            B                             A-B (pts)  95% CI (paired bootstrap)  A only  B only  McNemar p
+  standalone                   oracle                            -0.08             [-0.22, +0.06]      22      30       0.33
+  standalone                   zero_copy                         +6.14             [+5.46, +6.84]     943     326      8e-70
+  standalone                   mean_pred                        +42.66           [+41.55, +43.78]    4736     452          0
+  standalone                   mapper_k1_lam0.01_allheads        +5.31             [+4.72, +5.89]     723     190    7.8e-74
+  standalone                   mapper_k8_lam0.01_allheads        +3.38             [+2.87, +3.89]     517     178    3.4e-39
+  oracle                       zero_copy                         +6.22             [+5.54, +6.91]     947     322    1.1e-71
+  oracle                       mean_pred                        +42.74           [+41.63, +43.86]    4747     455          0
+  oracle                       mapper_k1_lam0.01_allheads        +5.39             [+4.79, +5.96]     729     188    8.3e-76
+  oracle                       mapper_k8_lam0.01_allheads        +3.46             [+2.95, +3.97]     522     175      6e-41
+  zero_copy                    mean_pred                        +36.52           [+35.41, +37.62]    4150     483          0
+  zero_copy                    mapper_k1_lam0.01_allheads        -0.84             [-1.44, -0.23]     459     543     0.0087
+  zero_copy                    mapper_k8_lam0.01_allheads        -2.77             [-3.39, -2.15]     381     659    5.6e-18
+  mean_pred                    mapper_k1_lam0.01_allheads       -37.35           [-38.46, -36.23]     530    4281          0
+  mean_pred                    mapper_k8_lam0.01_allheads       -39.29           [-40.38, -38.16]     495    4440          0
+  mapper_k1_lam0.01_allheads   mapper_k8_lam0.01_allheads        -1.93             [-2.33, -1.53]     119     313    3.4e-21
+
+=== 2026-10-07 14:38:37 PAIR_DONE configs/qwen3_4b_to_8b.yaml ===
+
+=== 2026-10-07 14:38:37 free 8B pieces before pair 2 ===
+overlay         120G   40G   81G  33% /
+
+=== 2026-10-07 14:38:37 models (download if missing) ===
+Fetching 12 files:   0%|          | 0/12 [00:00<?, ?it/s]Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Fetching 12 files:   8%|▊         | 1/12 [00:00<00:02,  4.61it/s]Fetching 12 files:  50%|█████     | 6/12 [00:00<00:00, 18.61it/s]Fetching 12 files:  75%|███████▌  | 9/12 [00:00<00:00, 16.37it/s]Fetching 12 files:  92%|█████████▏| 11/12 [00:05<00:00,  1.36it/s]Fetching 12 files:  92%|█████████▏| 11/12 [00:20<00:00,  1.36it/s]Fetching 12 files: 100%|██████████| 12/12 [00:40<00:00,  6.64s/it]Fetching 12 files: 100%|██████████| 12/12 [00:40<00:00,  3.37s/it]
+Fetching 13 files:   0%|          | 0/13 [00:00<?, ?it/s]Fetching 13 files: 100%|██████████| 13/13 [00:00<00:00, 1816.62it/s]
+
+=== 2026-10-07 14:39:19 probe (Stage A) + calibration capture, both models  [configs/qwen3_1.7b_to_4b.yaml] ===
+src Qwen/Qwen3-1.7B: 28 layers | tgt Qwen/Qwen3-4B: 36 layers | 8 kv heads x 128
+device=cuda dtype=bfloat16 shard=25 stride=4
+calibration: (500, 1024)
+  capturing Qwen/Qwen3-1.7B -> /root/kv-transfer/results/kv/Qwen__Qwen3-1.7B/calib_500x1024_s0_st4: 20/20 shards, ~14.7 GB
+loading Qwen/Qwen3-1.7B (bfloat16, cuda) ...
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/311 [00:00<?, ?it/s]Loading weights:   5%|▌         | 17/311 [00:00<00:01, 167.73it/s]Loading weights:  35%|███▌      | 109/311 [00:00<00:00, 605.31it/s]Loading weights:  60%|██████    | 188/311 [00:00<00:00, 685.01it/s]Loading weights:  85%|████████▍ | 263/311 [00:00<00:00, 707.69it/s]Loading weights: 100%|██████████| 311/311 [00:00<00:00, 662.68it/s]
+    shard 1/20  0.2m elapsed, ~3m left
+    shard 2/20  0.3m elapsed, ~3m left
+    shard 3/20  0.4m elapsed, ~3m left
+    shard 4/20  0.6m elapsed, ~2m left
+    shard 5/20  0.7m elapsed, ~2m left
+    shard 6/20  0.8m elapsed, ~2m left
+    shard 7/20  0.9m elapsed, ~2m left
+    shard 8/20  1.0m elapsed, ~1m left
+    shard 9/20  1.1m elapsed, ~1m left
+    shard 10/20  1.3m elapsed, ~1m left
+    shard 11/20  1.3m elapsed, ~1m left
+    shard 12/20  1.5m elapsed, ~1m left
+    shard 13/20  1.5m elapsed, ~1m left
+    shard 14/20  1.6m elapsed, ~1m left
+    shard 15/20  1.7m elapsed, ~1m left
+    shard 16/20  1.8m elapsed, ~0m left
+    shard 17/20  1.9m elapsed, ~0m left
+    shard 18/20  2.1m elapsed, ~0m left
+    shard 19/20  2.2m elapsed, ~0m left
+    shard 20/20  2.3m elapsed, ~0m left
+  reusing KV store /root/kv-transfer/results/kv/Qwen__Qwen3-4B/calib_500x1024_s0_st4 (500 items)
+statistics: 1.13 GB in contiguous tensors on cuda
+  shard 1/20: n=6400 obs/head, 0.1m elapsed, ~1m left
+  shard 2/20: n=12800 obs/head, 0.1m elapsed, ~1m left
+  shard 3/20: n=19200 obs/head, 0.2m elapsed, ~1m left
+  shard 4/20: n=25600 obs/head, 0.3m elapsed, ~1m left
+  shard 5/20: n=32000 obs/head, 0.3m elapsed, ~1m left
+  shard 6/20: n=38400 obs/head, 0.4m elapsed, ~1m left
+  shard 7/20: n=44800 obs/head, 0.4m elapsed, ~1m left
+  shard 8/20: n=51200 obs/head, 0.5m elapsed, ~1m left
+  shard 9/20: n=57600 obs/head, 0.5m elapsed, ~1m left
+  shard 10/20: n=64000 obs/head, 0.6m elapsed, ~1m left
+  shard 11/20: n=70400 obs/head, 0.6m elapsed, ~1m left
+  shard 12/20: n=76800 obs/head, 0.7m elapsed, ~0m left
+  shard 13/20: n=83200 obs/head, 0.8m elapsed, ~0m left
+  shard 14/20: n=89600 obs/head, 0.8m elapsed, ~0m left
+  shard 15/20: n=96000 obs/head, 0.9m elapsed, ~0m left
+  shard 16/20: n=102400 obs/head, 0.9m elapsed, ~0m left
+  shard 17/20: n=108800 obs/head, 1.0m elapsed, ~0m left
+  shard 18/20: n=115200 obs/head, 1.1m elapsed, ~0m left
+  shard 19/20: n=121600 obs/head, 1.1m elapsed, ~0m left
+  shard 20/20: n=128000 obs/head, 1.2m elapsed, ~0m left
+
+solving ... (3.6 min so far)
+saved -> /root/kv-transfer/results/qwen3_1.7b_to_4b/probe_r2_n500.pt  (3.6 min)
+
+=== Stage A: single-source linear structure ===
+observations per head: 128000
+  k_content : best 0.519   layer-aligned mean 0.397
+  k_rope    : best 0.406   layer-aligned mean 0.322
+  v         : best 0.452   layer-aligned mean 0.206
+  RoPE stripping: K_content 0.397 vs K_rope 0.322
+
+  paper reference (Qwen3 14B->32B): best single-source K R^2 = 0.81
+Qwen/Qwen3-1.7B -> Qwen/Qwen3-4B
+500 sequences, 128000 observations per head
+
+=== k_content head-averaged R^2 ===  (min 0.09  max 0.52)
+      tgt 012345678901234567890123456789012345
+  src  0 =+--:--:..... .        ......:.:::.:
+  src  1 =@++++*=-----:::...:..:::--------=--
+  src  2 -#+*+**+=====---::::::-----=-=-===--
+  src  3 :*++*+*++====---::::-:-----=-=---=--
+  src  4 -*+*+***++++=-==-::----=============
+  src  5 -*=++*#+*=+++-==--:----=============
+  src  6 :+=+=+*+*++++=+==--=--========-=-===
+  src  7 :+=+=+*******=++==-====+++=+=+======
+  src  8 .--===++*+++++++======++======-=-=--
+  src  9 .=-===++*+***+**++=+==++++++=+======
+  src 10 .=-===++++***+**++=+=++*++++++======
+  src 11 .=-===+++++*#+**+++*++***+++++=+====
+  src 12 .----===+++**+#*****+++**+++=+==-===
+  src 13 .----=+=+++***##*********+++++======
+  src 14  -:---==+=++*+*******+***++==+==-===
+  src 15 .--=--+=++++*+****+***#**+++++======
+  src 16 .-----+=++++*+********###+*+++======
+  src 17 .--=-=+++++**+*************++*=+=++=
+  src 18 .====++++++**+****+****##***+*++++++
+  src 19 :+=+=+*+*++**+**+++****##****#+*+**+
+  src 20 :+=+=+*++++**+**++++***##****#+*+*++
+  src 21 :=-===+=+++++=++++=++++*******++++++
+  src 22 :+=+==*++++++=++===++++******#+*+**+
+  src 23 :+===++++++++=++===+==+***++**+*****
+  src 24 :+=+==++===++=+====+==++*++++*+*+*++
+  src 25 :+-+==+====++=++===+==++*++++*+*+*++
+  src 26 :+-===+====+======-====++++++*+*+**+
+  src 27 .-:-:----:---:-:::::::-----======-=+
+
+=== v head-averaged R^2 ===  (min 0.04  max 0.45)
+      tgt 012345678901234567890123456789012345
+  src  0 ++----:..    .         ......:..... 
+  src  1 =@*+=+=-:....:..    ....::::::.:.:..
+  src  2 =***++--:....:..  ...:.::::::-..::..
+  src  3 -===++---:...:..   ..:..:.:::: ... .
+  src  4 :====+:-::.:.:..  ...:....:::.......
+  src  5 -===-+=--:.::::: ...::.:-::::: .:...
+  src  6 :----=:--::::-::...::::::.:::. ..   
+  src  7 .---:=:-:::::-::....::.:::..:. ..   
+  src  8 .:--:-:---:::-:-..::::::::..:   .   
+  src  9 ..::.::::::::--:..:::::.:...:       
+  src 10 .::-:-:::::-----:.:.:::-.:.::  ..   
+  src 11 .:--:-:-::.--=--:::---:-::.:-..... .
+  src 12  .:::-::-::--===:-----:::::::       
+  src 13 .::::-.::::--=-=:----=::::.::   .   
+  src 14  .::.:.:::.::=-=:--:--::::..:       
+  src 15  ::::-.::..::-:-:::---::::..: . .   
+  src 16 .:--:-:-:::::=-=::-:-=--:::::....  .
+  src 17  .:::-.::::::=:-::::--:::::::.. . ..
+  src 18 :--=-+:--::-:---.:::-=:---:--:......
+  src 19 :===-+--::.-:=:-...:--:---:---::-.:.
+  src 20 -===:=-:::.::-::....:::==-::-:.-::..
+  src 21 :=-----::...::.: ...::.:::::--.:.-..
+  src 22 :---:-:......:..  ...:.::::---::::::
+  src 23 :-:::-::.. .....    ....::..::.---..
+  src 24 :-:-:--... ....      .......:::-.-.:
+  src 25 :-::.-:.     .       . ......-:-:-..
+  src 26 :-:::::.               .:..::=.--=:.
+  src 27  ... .                   . .. . . ..
+
+=== headline numbers ===
+  k_content : best 0.519   layer-aligned mean 0.397
+  k_rope    : best 0.406   layer-aligned mean 0.322
+  v         : best 0.452   layer-aligned mean 0.206
+
+  RoPE stripping: K_content 0.397 vs K_rope 0.322 (positive difference means stripping helps)
+
+=== best source layer per target layer (k_content) ===
+  tgt  0 <- src  0  (R^2 0.302)
+  tgt  4 <- src  3  (R^2 0.380)
+  tgt  7 <- src  7  (R^2 0.378)   [aligned would be src 5]
+  tgt  8 <- src  6  (R^2 0.394)
+  tgt 12 <- src 11  (R^2 0.425)   [aligned would be src 9]
+  tgt 13 <- src 13  (R^2 0.379)   [aligned would be src 10]
+  tgt 14 <- src 13  (R^2 0.439)   [aligned would be src 11]
+  tgt 16 <- src 17  (R^2 0.417)   [aligned would be src 12]
+  tgt 17 <- src 17  (R^2 0.407)   [aligned would be src 13]
+  tgt 18 <- src 17  (R^2 0.394)   [aligned would be src 14]
+  tgt 20 <- src 16  (R^2 0.414)
+  tgt 24 <- src 20  (R^2 0.457)
+  tgt 27 <- src 19  (R^2 0.410)   [aligned would be src 21]
+  tgt 28 <- src 22  (R^2 0.402)
+  tgt 29 <- src 19  (R^2 0.435)   [aligned would be src 22]
+  tgt 30 <- src 19  (R^2 0.374)   [aligned would be src 23]
+  tgt 32 <- src 23  (R^2 0.378)   [aligned would be src 25]
+  tgt 33 <- src 23  (R^2 0.417)   [aligned would be src 25]
+  tgt 35 <- src 23  (R^2 0.385)   [aligned would be src 27]
+  layer-aligned in 23/36 target layers
+
+=== vs paper (Qwen3 14B->32B) ===
+  best single-source K R^2:  ours 0.519  paper 0.81
+
+  Partial linear structure: weaker than the paper's 3B+ pairs but
+  clearly non-trivial. Worth fitting top-k mappers to see how much
+  multi-source selection recovers.
+
+=== 2026-10-07 14:43:00 fit all-heads k=1 and k=8 ===
+calibration (500, 1024)  | 28 -> 36 layers, 8x128
+  reusing KV store /root/kv-transfer/results/kv/Qwen__Qwen3-1.7B/calib_500x1024_s0_st4 (500 items)
+  reusing KV store /root/kv-transfer/results/kv/Qwen__Qwen3-4B/calib_500x1024_s0_st4 (500 items)
+
+=== fitting k1 ===
+  sources per target layer: [1]
+  1 target-layer group(s) under 30 GB (all_heads)
+  K and V select different source layers in 24/36 target layers
+  group 1/1 (target layers 0-35) 0.4m
+  lam=0.01: mean R^2  K=0.621  V=0.484  -> mapper_k1_lam0.01_allheads.pt
+
+=== fitting k8 ===
+  sources per target layer: [8]
+  2 target-layer group(s) under 30 GB (all_heads)
+  K and V select different source layers in 35/36 target layers
+  group 1/2 (target layers 0-23) 1.0m
+  group 2/2 (target layers 24-35) 1.5m
+  lam=0.01: mean R^2  K=0.745  V=0.626  -> mapper_k8_lam0.01_allheads.pt
+
+=== 2026-10-07 14:45:02 held-out R^2 (fit on 18 of 20 shards, score on the last 2) ===
+calibration (500, 1024)  | 28 -> 36 layers, 8x128
+  reusing KV store /root/kv-transfer/results/kv/Qwen__Qwen3-1.7B/calib_500x1024_s0_st4 (500 items)
+  reusing KV store /root/kv-transfer/results/kv/Qwen__Qwen3-4B/calib_500x1024_s0_st4 (500 items)
+  holding out the last 2/20 shards for out-of-sample R^2
+
+=== fitting k1 ===
+  sources per target layer: [1]
+  1 target-layer group(s) under 15 GB (all_heads)
+  K and V select different source layers in 24/36 target layers
+  group 1/1 (target layers 0-35) 0.4m
+  lam=0.01: mean R^2  K=0.621  V=0.485  | held-out K=0.608  V=0.468  -> mapper_k1_lam0.01_allheads_ho2.pt
+
+=== fitting k8 ===
+  sources per target layer: [8]
+  3 target-layer group(s) under 15 GB (all_heads)
+  K and V select different source layers in 35/36 target layers
+  group 1/3 (target layers 0-11) 0.6m
+  group 2/3 (target layers 12-23) 1.1m
+  group 3/3 (target layers 24-35) 1.6m
+  lam=0.01: mean R^2  K=0.747  V=0.629  | held-out K=0.707  V=0.574  -> mapper_k8_lam0.01_allheads_ho2.pt
+
+saved -> /root/kv-transfer/results/qwen3_1.7b_to_4b/heldout_r2.json
+
+=== 2026-10-07 14:47:10 HellaSwag: standalone, oracle, zero-copy, all-heads k=1, all-heads k=8 ===
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+hellaswag: 10042 docs, 10019 unique contexts, 494515 context tokens (12s)
+2 round(s), <= 261579 prefix tokens (~30 GB of source KV) each
+
+=== round 1/2: hellaswag[0..6189] ===
+  capturing Qwen/Qwen3-1.7B -> /root/kv-transfer/results/kv/Qwen__Qwen3-1.7B/task_hellaswag_10042_0-6189: 248/248 shards, ~30.0 GB
+loading Qwen/Qwen3-1.7B (bfloat16, cuda) ...
+Loading weights:   0%|          | 0/311 [00:00<?, ?it/s]Loading weights:   6%|▌         | 19/311 [00:00<00:01, 189.88it/s]Loading weights:  34%|███▍      | 105/311 [00:00<00:00, 582.64it/s]Loading weights:  59%|█████▊    | 182/311 [00:00<00:00, 666.23it/s]Loading weights:  83%|████████▎ | 257/311 [00:00<00:00, 690.62it/s]Loading weights: 100%|██████████| 311/311 [00:00<00:00, 640.68it/s]
+    shard 1/248  0.1m elapsed, ~13m left
+    shard 2/248  0.1m elapsed, ~9m left
+    shard 3/248  0.1m elapsed, ~8m left
+    shard 4/248  0.1m elapsed, ~7m left
+    shard 5/248  0.2m elapsed, ~8m left
+    shard 6/248  0.2m elapsed, ~7m left
+    shard 7/248  0.2m elapsed, ~6m left
+    shard 8/248  0.2m elapsed, ~6m left
+    shard 9/248  0.2m elapsed, ~6m left
+    shard 10/248  0.2m elapsed, ~6m left
+    shard 11/248  0.2m elapsed, ~5m left
+    shard 12/248  0.3m elapsed, ~5m left
+    shard 13/248  0.3m elapsed, ~5m left
+    shard 14/248  0.3m elapsed, ~5m left
+    shard 15/248  0.3m elapsed, ~5m left
+    shard 16/248  0.3m elapsed, ~5m left
+    shard 17/248  0.3m elapsed, ~5m left
+    shard 18/248  0.3m elapsed, ~4m left
+    shard 19/248  0.4m elapsed, ~4m left
+    shard 20/248  0.4m elapsed, ~4m left
+    shard 21/248  0.4m elapsed, ~4m left
+    shard 22/248  0.4m elapsed, ~4m left
+    shard 23/248  0.4m elapsed, ~4m left
+    shard 24/248  0.5m elapsed, ~4m left
+    shard 25/248  0.5m elapsed, ~4m left
+    shard 26/248  0.5m elapsed, ~4m left
+    shard 27/248  0.5m elapsed, ~4m left
+    shard 28/248  0.6m elapsed, ~5m left
+    shard 29/248  0.6m elapsed, ~5m left
+    shard 30/248  0.6m elapsed, ~4m left
+    shard 31/248  0.7m elapsed, ~5m left
+    shard 32/248  0.7m elapsed, ~5m left
+    shard 33/248  0.7m elapsed, ~5m left
+    shard 34/248  0.8m elapsed, ~5m left
+    shard 35/248  0.8m elapsed, ~5m left
+    shard 36/248  0.9m elapsed, ~5m left
+    shard 37/248  0.9m elapsed, ~5m left
+    shard 38/248  0.9m elapsed, ~5m left
+    shard 39/248  0.9m elapsed, ~5m left
+    shard 40/248  1.0m elapsed, ~5m left
+    shard 41/248  1.0m elapsed, ~5m left
+    shard 42/248  1.0m elapsed, ~5m left
+    shard 43/248  1.0m elapsed, ~5m left
+    shard 44/248  1.0m elapsed, ~5m left
+    shard 45/248  1.0m elapsed, ~5m left
+    shard 46/248  1.1m elapsed, ~5m left
+    shard 47/248  1.1m elapsed, ~5m left
+    shard 48/248  1.1m elapsed, ~5m left
+    shard 49/248  1.1m elapsed, ~4m left
+    shard 50/248  1.1m elapsed, ~4m left
+    shard 51/248  1.1m elapsed, ~4m left
+    shard 52/248  1.2m elapsed, ~4m left
+    shard 53/248  1.2m elapsed, ~4m left
+    shard 54/248  1.2m elapsed, ~4m left
+    shard 55/248  1.2m elapsed, ~4m left
+    shard 56/248  1.3m elapsed, ~4m left
+    shard 57/248  1.3m elapsed, ~4m left
+    shard 58/248  1.3m elapsed, ~4m left
+    shard 59/248  1.3m elapsed, ~4m left
+    shard 60/248  1.3m elapsed, ~4m left
+    shard 61/248  1.4m elapsed, ~4m left
+    shard 62/248  1.4m elapsed, ~4m left
+    shard 63/248  1.4m elapsed, ~4m left
+    shard 64/248  1.4m elapsed, ~4m left
+    shard 65/248  1.4m elapsed, ~4m left
+    shard 66/248  1.4m elapsed, ~4m left
+    shard 67/248  1.5m elapsed, ~4m left
+    shard 68/248  1.6m elapsed, ~4m left
+    shard 69/248  1.6m elapsed, ~4m left
+    shard 70/248  1.7m elapsed, ~4m left
+    shard 71/248  1.7m elapsed, ~4m left
+    shard 72/248  1.7m elapsed, ~4m left
+    shard 73/248  1.8m elapsed, ~4m left
+    shard 74/248  1.8m elapsed, ~4m left
+    shard 75/248  1.8m elapsed, ~4m left
+    shard 76/248  1.8m elapsed, ~4m left
+    shard 77/248  1.9m elapsed, ~4m left
+    shard 78/248  1.9m elapsed, ~4m left
+    shard 79/248  1.9m elapsed, ~4m left
+    shard 80/248  1.9m elapsed, ~4m left
+    shard 81/248  1.9m elapsed, ~4m left
+    shard 82/248  2.0m elapsed, ~4m left
+    shard 83/248  2.0m elapsed, ~4m left
+    shard 84/248  2.0m elapsed, ~4m left
+    shard 85/248  2.0m elapsed, ~4m left
+    shard 86/248  2.0m elapsed, ~4m left
+    shard 87/248  2.1m elapsed, ~4m left
+    shard 88/248  2.1m elapsed, ~4m left
+    shard 89/248  2.1m elapsed, ~4m left
+    shard 90/248  2.1m elapsed, ~4m left
+    shard 91/248  2.1m elapsed, ~4m left
+    shard 92/248  2.2m elapsed, ~4m left
+    shard 93/248  2.2m elapsed, ~4m left
+    shard 94/248  2.2m elapsed, ~4m left
+    shard 95/248  2.2m elapsed, ~4m left
+    shard 96/248  2.3m elapsed, ~4m left
+    shard 97/248  2.3m elapsed, ~4m left
+    shard 98/248  2.3m elapsed, ~3m left
+    shard 99/248  2.3m elapsed, ~3m left
+    shard 100/248  2.3m elapsed, ~3m left
+    shard 101/248  2.3m elapsed, ~3m left
+    shard 102/248  2.3m elapsed, ~3m left
+    shard 103/248  2.4m elapsed, ~3m left
+    shard 104/248  2.4m elapsed, ~3m left
+    shard 105/248  2.4m elapsed, ~3m left
+    shard 106/248  2.4m elapsed, ~3m left
+    shard 107/248  2.4m elapsed, ~3m left
+    shard 108/248  2.4m elapsed, ~3m left
+    shard 109/248  2.5m elapsed, ~3m left
+    shard 110/248  2.5m elapsed, ~3m left
+    shard 111/248  2.5m elapsed, ~3m left
+    shard 112/248  2.5m elapsed, ~3m left
+    shard 113/248  2.5m elapsed, ~3m left
+    shard 114/248  2.5m elapsed, ~3m left
+    shard 115/248  2.6m elapsed, ~3m left
+    shard 116/248  2.6m elapsed, ~3m left
+    shard 117/248  2.6m elapsed, ~3m left
+    shard 118/248  2.6m elapsed, ~3m left
+    shard 119/248  2.7m elapsed, ~3m left
+    shard 120/248  2.7m elapsed, ~3m left
+    shard 121/248  2.7m elapsed, ~3m left
+    shard 122/248  2.7m elapsed, ~3m left
+    shard 123/248  2.7m elapsed, ~3m left
+    shard 124/248  2.7m elapsed, ~3m left
+    shard 125/248  2.8m elapsed, ~3m left
+    shard 126/248  2.8m elapsed, ~3m left
+    shard 127/248  2.8m elapsed, ~3m left
+    shard 128/248  2.8m elapsed, ~3m left
+    shard 129/248  2.8m elapsed, ~3m left
+    shard 130/248  2.9m elapsed, ~3m left
+    shard 131/248  2.9m elapsed, ~3m left
+    shard 132/248  2.9m elapsed, ~3m left
+    shard 133/248  3.0m elapsed, ~3m left
+    shard 134/248  3.0m elapsed, ~3m left
+    shard 135/248  3.0m elapsed, ~3m left
+    shard 136/248  3.1m elapsed, ~3m left
+    shard 137/248  3.1m elapsed, ~3m left
+    shard 138/248  3.2m elapsed, ~3m left
+    shard 139/248  3.2m elapsed, ~3m left
+    shard 140/248  3.3m elapsed, ~3m left
+    shard 141/248  3.3m elapsed, ~3m left
+    shard 142/248  3.4m elapsed, ~3m left
+    shard 143/248  3.4m elapsed, ~3m left
+    shard 144/248  3.5m elapsed, ~2m left
+    shard 145/248  3.5m elapsed, ~2m left
+    shard 146/248  3.6m elapsed, ~3m left
+    shard 147/248  3.6m elapsed, ~2m left
+    shard 148/248  3.6m elapsed, ~2m left
+    shard 149/248  3.7m elapsed, ~2m left
+    shard 150/248  3.7m elapsed, ~2m left
+    shard 151/248  3.8m elapsed, ~2m left
+    shard 152/248  3.8m elapsed, ~2m left
+    shard 153/248  3.9m elapsed, ~2m left
+    shard 154/248  3.9m elapsed, ~2m left
+    shard 155/248  4.0m elapsed, ~2m left
+    shard 156/248  4.0m elapsed, ~2m left
+    shard 157/248  4.0m elapsed, ~2m left
+    shard 158/248  4.1m elapsed, ~2m left
+    shard 159/248  4.1m elapsed, ~2m left
+    shard 160/248  4.2m elapsed, ~2m left
+    shard 161/248  4.2m elapsed, ~2m left
+    shard 162/248  4.3m elapsed, ~2m left
+    shard 163/248  4.3m elapsed, ~2m left
+    shard 164/248  4.3m elapsed, ~2m left
+    shard 165/248  4.4m elapsed, ~2m left
+    shard 166/248  4.4m elapsed, ~2m left
+    shard 167/248  4.4m elapsed, ~2m left
+    shard 168/248  4.5m elapsed, ~2m left
+    shard 169/248  4.5m elapsed, ~2m left
+    shard 170/248  4.5m elapsed, ~2m left
+    shard 171/248  4.6m elapsed, ~2m left
+    shard 172/248  4.6m elapsed, ~2m left
+    shard 173/248  4.6m elapsed, ~2m left
+    shard 174/248  4.6m elapsed, ~2m left
+    shard 175/248  4.7m elapsed, ~2m left
+    shard 176/248  4.7m elapsed, ~2m left
+    shard 177/248  4.7m elapsed, ~2m left
+    shard 178/248  4.7m elapsed, ~2m left
+    shard 179/248  4.8m elapsed, ~2m left
+    shard 180/248  4.8m elapsed, ~2m left
+    shard 181/248  4.8m elapsed, ~2m left
+    shard 182/248  4.9m elapsed, ~2m left
+    shard 183/248  4.9m elapsed, ~2m left
+    shard 184/248  5.0m elapsed, ~2m left
+    shard 185/248  5.0m elapsed, ~2m left
+    shard 186/248  5.0m elapsed, ~2m left
+    shard 187/248  5.1m elapsed, ~2m left
+    shard 188/248  5.1m elapsed, ~2m left
+    shard 189/248  5.1m elapsed, ~2m left
+    shard 190/248  5.1m elapsed, ~2m left
+    shard 191/248  5.2m elapsed, ~2m left
+    shard 192/248  5.2m elapsed, ~2m left
+    shard 193/248  5.3m elapsed, ~2m left
+    shard 194/248  5.3m elapsed, ~1m left
+    shard 195/248  5.4m elapsed, ~1m left
+    shard 196/248  5.4m elapsed, ~1m left
+    shard 197/248  5.4m elapsed, ~1m left
+    shard 198/248  5.5m elapsed, ~1m left
+    shard 199/248  5.5m elapsed, ~1m left
+    shard 200/248  5.6m elapsed, ~1m left
+    shard 201/248  5.6m elapsed, ~1m left
+    shard 202/248  5.6m elapsed, ~1m left
+    shard 203/248  5.6m elapsed, ~1m left
+    shard 204/248  5.7m elapsed, ~1m left
+    shard 205/248  5.7m elapsed, ~1m left
+    shard 206/248  5.7m elapsed, ~1m left
+    shard 207/248  5.7m elapsed, ~1m left
+    shard 208/248  5.8m elapsed, ~1m left
+    shard 209/248  5.9m elapsed, ~1m left
+    shard 210/248  5.9m elapsed, ~1m left
+    shard 211/248  5.9m elapsed, ~1m left
+    shard 212/248  6.0m elapsed, ~1m left
+    shard 213/248  6.0m elapsed, ~1m left
+    shard 214/248  6.0m elapsed, ~1m left
+    shard 215/248  6.1m elapsed, ~1m left
+    shard 216/248  6.1m elapsed, ~1m left
+    shard 217/248  6.1m elapsed, ~1m left
+    shard 218/248  6.1m elapsed, ~1m left
+    shard 219/248  6.2m elapsed, ~1m left
+    shard 220/248  6.2m elapsed, ~1m left
+    shard 221/248  6.3m elapsed, ~1m left
+    shard 222/248  6.3m elapsed, ~1m left
+    shard 223/248  6.3m elapsed, ~1m left
+    shard 224/248  6.4m elapsed, ~1m left
+    shard 225/248  6.4m elapsed, ~1m left
+    shard 226/248  6.5m elapsed, ~1m left
+    shard 227/248  6.5m elapsed, ~1m left
+    shard 228/248  6.5m elapsed, ~1m left
+    shard 229/248  6.6m elapsed, ~1m left
+    shard 230/248  6.6m elapsed, ~1m left
+    shard 231/248  6.6m elapsed, ~0m left
+    shard 232/248  6.6m elapsed, ~0m left
+    shard 233/248  6.7m elapsed, ~0m left
+    shard 234/248  6.7m elapsed, ~0m left
+    shard 235/248  6.7m elapsed, ~0m left
+    shard 236/248  6.7m elapsed, ~0m left
+    shard 237/248  6.7m elapsed, ~0m left
+    shard 238/248  6.8m elapsed, ~0m left
+    shard 239/248  6.8m elapsed, ~0m left
+    shard 240/248  6.8m elapsed, ~0m left
+    shard 241/248  6.8m elapsed, ~0m left
+    shard 242/248  6.8m elapsed, ~0m left
+    shard 243/248  6.9m elapsed, ~0m left
+    shard 244/248  6.9m elapsed, ~0m left
+    shard 245/248  7.0m elapsed, ~0m left
+    shard 246/248  7.1m elapsed, ~0m left
+    shard 247/248  7.1m elapsed, ~0m left
+    shard 248/248  7.1m elapsed, ~0m left
+loading Qwen/Qwen3-4B (bfloat16, cuda) ...
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights:   1%|          | 3/398 [00:00<00:14, 28.09it/s]Loading weights:  10%|▉         | 38/398 [00:00<00:01, 203.90it/s]Loading weights:  18%|█▊        | 70/398 [00:00<00:01, 253.44it/s]Loading weights:  26%|██▌       | 102/398 [00:00<00:01, 267.06it/s]Loading weights:  34%|███▍      | 135/398 [00:00<00:00, 287.40it/s]Loading weights:  41%|████      | 164/398 [00:00<00:00, 286.66it/s]Loading weights:  49%|████▉     | 197/398 [00:00<00:00, 299.43it/s]Loading weights:  57%|█████▋    | 228/398 [00:00<00:00, 299.20it/s]Loading weights:  65%|██████▍   | 258/398 [00:00<00:00, 297.19it/s]Loading weights:  73%|███████▎  | 291/398 [00:01<00:00, 303.58it/s]Loading weights:  81%|████████▏ | 324/398 [00:01<00:00, 308.35it/s]Loading weights:  90%|████████▉ | 357/398 [00:01<00:00, 310.95it/s]Loading weights:  98%|█████████▊| 390/398 [00:01<00:00, 316.12it/s]Loading weights: 100%|██████████| 398/398 [00:01<00:00, 292.21it/s]
+  standalone               hellaswag      6190 contexts ...
+      1000/6190 contexts
+      2000/6190 contexts
+      3000/6190 contexts
+      4000/6190 contexts
+      5000/6190 contexts
+      6000/6190 contexts
+    (133s)
+  oracle                   hellaswag      6190 contexts ...
+      1000/6190 contexts
+      2000/6190 contexts
+      3000/6190 contexts
+      4000/6190 contexts
+      5000/6190 contexts
+      6000/6190 contexts
+    (112s)
+  zero_copy                hellaswag      6190 contexts ...
+      1000/6190 contexts
+      2000/6190 contexts
+      3000/6190 contexts
+      4000/6190 contexts
+      5000/6190 contexts
+      6000/6190 contexts
+    (424s)
+  mean_pred                hellaswag      6190 contexts ...
+      1000/6190 contexts
+      2000/6190 contexts
+      3000/6190 contexts
+      4000/6190 contexts
+      5000/6190 contexts
+      6000/6190 contexts
+    (334s)
+  mapper_k1_lam0.01_allheads hellaswag      6190 contexts ...
+      1000/6190 contexts
+      2000/6190 contexts
+      3000/6190 contexts
+      4000/6190 contexts
+      5000/6190 contexts
+      6000/6190 contexts
+    (435s)
+  mapper_k8_lam0.01_allheads hellaswag      6190 contexts ...
+      1000/6190 contexts
+      2000/6190 contexts
+      3000/6190 contexts
+      4000/6190 contexts
+      5000/6190 contexts
+      6000/6190 contexts
+    (481s)
+
+=== round 2/2: hellaswag[6190..10018] ===
+  capturing Qwen/Qwen3-1.7B -> /root/kv-transfer/results/kv/Qwen__Qwen3-1.7B/task_hellaswag_10042_6190-10018: 154/154 shards, ~25.6 GB
+loading Qwen/Qwen3-1.7B (bfloat16, cuda) ...
+Loading weights:   0%|          | 0/311 [00:00<?, ?it/s]Loading weights:   0%|          | 1/311 [00:00<00:37,  8.25it/s]Loading weights:  32%|███▏      | 98/311 [00:00<00:00, 526.92it/s]Loading weights:  57%|█████▋    | 177/311 [00:00<00:00, 640.89it/s]Loading weights:  82%|████████▏ | 254/311 [00:00<00:00, 687.86it/s]Loading weights: 100%|██████████| 311/311 [00:00<00:00, 619.92it/s]
+    shard 1/154  0.1m elapsed, ~12m left
+    shard 2/154  0.1m elapsed, ~8m left
+    shard 3/154  0.1m elapsed, ~7m left
+    shard 4/154  0.2m elapsed, ~6m left
+    shard 5/154  0.2m elapsed, ~6m left
+    shard 6/154  0.2m elapsed, ~5m left
+    shard 7/154  0.2m elapsed, ~5m left
+    shard 8/154  0.3m elapsed, ~5m left
+    shard 9/154  0.3m elapsed, ~5m left
+    shard 10/154  0.3m elapsed, ~5m left
+    shard 11/154  0.3m elapsed, ~4m left
+    shard 12/154  0.4m elapsed, ~4m left
+    shard 13/154  0.4m elapsed, ~5m left
+    shard 14/154  0.5m elapsed, ~5m left
+    shard 15/154  0.5m elapsed, ~4m left
+    shard 16/154  0.5m elapsed, ~4m left
+    shard 17/154  0.5m elapsed, ~4m left
+    shard 18/154  0.6m elapsed, ~4m left
+    shard 19/154  0.6m elapsed, ~4m left
+    shard 20/154  0.6m elapsed, ~4m left
+    shard 21/154  0.6m elapsed, ~4m left
+    shard 22/154  0.7m elapsed, ~4m left
+    shard 23/154  0.7m elapsed, ~4m left
+    shard 24/154  0.7m elapsed, ~4m left
+    shard 25/154  0.8m elapsed, ~4m left
+    shard 26/154  0.8m elapsed, ~4m left
+    shard 27/154  0.8m elapsed, ~4m left
+    shard 28/154  0.9m elapsed, ~4m left
+    shard 29/154  0.9m elapsed, ~4m left
+    shard 30/154  1.0m elapsed, ~4m left
+    shard 31/154  1.0m elapsed, ~4m left
+    shard 32/154  1.0m elapsed, ~4m left
+    shard 33/154  1.1m elapsed, ~4m left
+    shard 34/154  1.1m elapsed, ~4m left
+    shard 35/154  1.2m elapsed, ~4m left
+    shard 36/154  1.2m elapsed, ~4m left
+    shard 37/154  1.2m elapsed, ~4m left
+    shard 38/154  1.3m elapsed, ~4m left
+    shard 39/154  1.3m elapsed, ~4m left
+    shard 40/154  1.3m elapsed, ~4m left
+    shard 41/154  1.4m elapsed, ~4m left
+    shard 42/154  1.4m elapsed, ~4m left
+    shard 43/154  1.4m elapsed, ~4m left
+    shard 44/154  1.4m elapsed, ~4m left
+    shard 45/154  1.5m elapsed, ~4m left
+    shard 46/154  1.5m elapsed, ~3m left
+    shard 47/154  1.5m elapsed, ~3m left
+    shard 48/154  1.5m elapsed, ~3m left
+    shard 49/154  1.6m elapsed, ~3m left
+    shard 50/154  1.6m elapsed, ~3m left
+    shard 51/154  1.6m elapsed, ~3m left
+    shard 52/154  1.6m elapsed, ~3m left
+    shard 53/154  1.7m elapsed, ~3m left
+    shard 54/154  1.7m elapsed, ~3m left
+    shard 55/154  1.7m elapsed, ~3m left
+    shard 56/154  1.7m elapsed, ~3m left
+    shard 57/154  1.8m elapsed, ~3m left
+    shard 58/154  1.8m elapsed, ~3m left
+    shard 59/154  1.8m elapsed, ~3m left
+    shard 60/154  1.9m elapsed, ~3m left
+    shard 61/154  1.9m elapsed, ~3m left
+    shard 62/154  1.9m elapsed, ~3m left
+    shard 63/154  2.0m elapsed, ~3m left
+    shard 64/154  2.0m elapsed, ~3m left
+    shard 65/154  2.1m elapsed, ~3m left
+    shard 66/154  2.1m elapsed, ~3m left
+    shard 67/154  2.2m elapsed, ~3m left
+    shard 68/154  2.2m elapsed, ~3m left
+    shard 69/154  2.2m elapsed, ~3m left
+    shard 70/154  2.2m elapsed, ~3m left
+    shard 71/154  2.3m elapsed, ~3m left
+    shard 72/154  2.3m elapsed, ~3m left
+    shard 73/154  2.4m elapsed, ~3m left
+    shard 74/154  2.4m elapsed, ~3m left
+    shard 75/154  2.5m elapsed, ~3m left
+    shard 76/154  2.5m elapsed, ~3m left
+    shard 77/154  2.6m elapsed, ~3m left
+    shard 78/154  2.6m elapsed, ~3m left
+    shard 79/154  2.7m elapsed, ~3m left
+    shard 80/154  2.7m elapsed, ~2m left
+    shard 81/154  2.8m elapsed, ~2m left
+    shard 82/154  2.8m elapsed, ~2m left
+    shard 83/154  2.8m elapsed, ~2m left
+    shard 84/154  2.8m elapsed, ~2m left
+    shard 85/154  2.9m elapsed, ~2m left
+    shard 86/154  2.9m elapsed, ~2m left
+    shard 87/154  2.9m elapsed, ~2m left
+    shard 88/154  3.0m elapsed, ~2m left
+    shard 89/154  3.0m elapsed, ~2m left
+    shard 90/154  3.0m elapsed, ~2m left
+    shard 91/154  3.1m elapsed, ~2m left
+    shard 92/154  3.1m elapsed, ~2m left
+    shard 93/154  3.1m elapsed, ~2m left
+    shard 94/154  3.2m elapsed, ~2m left
+    shard 95/154  3.2m elapsed, ~2m left
+    shard 96/154  3.2m elapsed, ~2m left
+    shard 97/154  3.2m elapsed, ~2m left
+    shard 98/154  3.2m elapsed, ~2m left
+    shard 99/154  3.3m elapsed, ~2m left
+    shard 100/154  3.3m elapsed, ~2m left
+    shard 101/154  3.3m elapsed, ~2m left
+    shard 102/154  3.4m elapsed, ~2m left
+    shard 103/154  3.4m elapsed, ~2m left
+    shard 104/154  3.4m elapsed, ~2m left
+    shard 105/154  3.5m elapsed, ~2m left
+    shard 106/154  3.5m elapsed, ~2m left
+    shard 107/154  3.5m elapsed, ~2m left
+    shard 108/154  3.5m elapsed, ~2m left
+    shard 109/154  3.6m elapsed, ~1m left
+    shard 110/154  3.6m elapsed, ~1m left
+    shard 111/154  3.6m elapsed, ~1m left
+    shard 112/154  3.7m elapsed, ~1m left
+    shard 113/154  3.7m elapsed, ~1m left
+    shard 114/154  3.7m elapsed, ~1m left
+    shard 115/154  3.8m elapsed, ~1m left
+    shard 116/154  3.8m elapsed, ~1m left
+    shard 117/154  3.8m elapsed, ~1m left
+    shard 118/154  3.9m elapsed, ~1m left
+    shard 119/154  3.9m elapsed, ~1m left
+    shard 120/154  4.0m elapsed, ~1m left
+    shard 121/154  4.0m elapsed, ~1m left
+    shard 122/154  4.1m elapsed, ~1m left
+    shard 123/154  4.1m elapsed, ~1m left
+    shard 124/154  4.1m elapsed, ~1m left
+    shard 125/154  4.1m elapsed, ~1m left
+    shard 126/154  4.2m elapsed, ~1m left
+    shard 127/154  4.2m elapsed, ~1m left
+    shard 128/154  4.2m elapsed, ~1m left
+    shard 129/154  4.2m elapsed, ~1m left
+    shard 130/154  4.2m elapsed, ~1m left
+    shard 131/154  4.3m elapsed, ~1m left
+    shard 132/154  4.4m elapsed, ~1m left
+    shard 133/154  4.4m elapsed, ~1m left
+    shard 134/154  4.4m elapsed, ~1m left
+    shard 135/154  4.4m elapsed, ~1m left
+    shard 136/154  4.5m elapsed, ~1m left
+    shard 137/154  4.5m elapsed, ~1m left
+    shard 138/154  4.5m elapsed, ~1m left
+    shard 139/154  4.5m elapsed, ~0m left
+    shard 140/154  4.6m elapsed, ~0m left
+    shard 141/154  4.6m elapsed, ~0m left
+    shard 142/154  4.7m elapsed, ~0m left
+    shard 143/154  4.7m elapsed, ~0m left
+    shard 144/154  4.7m elapsed, ~0m left
+    shard 145/154  4.8m elapsed, ~0m left
+    shard 146/154  4.8m elapsed, ~0m left
+    shard 147/154  4.8m elapsed, ~0m left
+    shard 148/154  4.9m elapsed, ~0m left
+    shard 149/154  4.9m elapsed, ~0m left
+    shard 150/154  4.9m elapsed, ~0m left
+    shard 151/154  5.0m elapsed, ~0m left
+    shard 152/154  5.0m elapsed, ~0m left
+    shard 153/154  5.0m elapsed, ~0m left
+    shard 154/154  5.0m elapsed, ~0m left
+loading Qwen/Qwen3-4B (bfloat16, cuda) ...
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights:   4%|▍         | 15/398 [00:00<00:02, 148.04it/s]Loading weights:  14%|█▍        | 57/398 [00:00<00:01, 305.08it/s]Loading weights:  23%|██▎       | 93/398 [00:00<00:00, 326.94it/s]Loading weights:  34%|███▍      | 135/398 [00:00<00:00, 361.40it/s]Loading weights:  43%|████▎     | 172/398 [00:00<00:00, 360.17it/s]Loading weights:  54%|█████▎    | 213/398 [00:00<00:00, 372.15it/s]Loading weights:  64%|██████▍   | 256/398 [00:00<00:00, 377.36it/s]Loading weights:  75%|███████▌  | 300/398 [00:00<00:00, 389.85it/s]Loading weights:  85%|████████▌ | 339/398 [00:00<00:00, 382.75it/s]Loading weights:  95%|█████████▌| 379/398 [00:01<00:00, 382.73it/s]Loading weights: 100%|██████████| 398/398 [00:01<00:00, 368.79it/s]
+  standalone               hellaswag      3829 contexts ...
+      1000/3829 contexts
+      2000/3829 contexts
+      3000/3829 contexts
+  standalone               hellaswag      acc_norm = 0.6850
+    (102s)
+  oracle                   hellaswag      3829 contexts ...
+      1000/3829 contexts
+      2000/3829 contexts
+      3000/3829 contexts
+  oracle                   hellaswag      acc_norm = 0.6845
+    (86s)
+  zero_copy                hellaswag      3829 contexts ...
+      1000/3829 contexts
+      2000/3829 contexts
+      3000/3829 contexts
+  zero_copy                hellaswag      acc_norm = 0.2630
+    (375s)
+  mean_pred                hellaswag      3829 contexts ...
+      1000/3829 contexts
+      2000/3829 contexts
+      3000/3829 contexts
+  mean_pred                hellaswag      acc_norm = 0.2783
+    (232s)
+  mapper_k1_lam0.01_allheads hellaswag      3829 contexts ...
+      1000/3829 contexts
+      2000/3829 contexts
+      3000/3829 contexts
+  mapper_k1_lam0.01_allheads hellaswag      acc_norm = 0.5482
+    (319s)
+  mapper_k8_lam0.01_allheads hellaswag      3829 contexts ...
+      1000/3829 contexts
+      2000/3829 contexts
+      3000/3829 contexts
+  mapper_k8_lam0.01_allheads hellaswag      acc_norm = 0.6325
+    (363s)
+
+=== retention vs standalone (%) ===
+  config                        hellaswag     avg
+  standalone                        100.0   100.0
+  oracle                             99.9    99.9
+  zero_copy                          38.4    38.4
+  mean_pred                          40.6    40.6
+  mapper_k1_lam0.01_allheads           80.0    80.0
+  mapper_k8_lam0.01_allheads           92.3    92.3
+
+saved -> /root/kv-transfer/results/qwen3_1.7b_to_4b/eval_tasks.json
+
+=== 2026-10-07 15:56:25 paired test ===
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+hellaswag: 10042 questions, metric=acc_norm, raw=/root/kv-transfer/results/qwen3_1.7b_to_4b/eval_tasks.partial.json
+
+  configuration                   acc_norm
+  standalone                        0.6850
+  oracle                            0.6845
+  zero_copy                         0.2630
+  mean_pred                         0.2783
+  mapper_k1_lam0.01_allheads        0.5482
+  mapper_k8_lam0.01_allheads        0.6325
+
+  A                            B                             A-B (pts)  95% CI (paired bootstrap)  A only  B only  McNemar p
+  standalone                   oracle                            +0.05             [-0.10, +0.20]      30      25       0.59
+  standalone                   zero_copy                        +42.20           [+41.00, +43.41]    4964     726          0
+  standalone                   mean_pred                        +40.67           [+39.52, +41.80]    4605     521          0
+  standalone                   mapper_k1_lam0.01_allheads       +13.68           [+12.82, +14.55]    1743     369   8.5e-213
+  standalone                   mapper_k8_lam0.01_allheads        +5.25             [+4.59, +5.91]     829     302      3e-57
+  oracle                       zero_copy                        +42.15           [+40.95, +43.37]    4961     728          0
+  oracle                       mean_pred                        +40.62           [+39.46, +41.74]    4595     516          0
+  oracle                       mapper_k1_lam0.01_allheads       +13.63           [+12.77, +14.49]    1735     366     2e-212
+  oracle                       mapper_k8_lam0.01_allheads        +5.20             [+4.55, +5.86]     823     301    1.6e-56
+  zero_copy                    mean_pred                         -1.53             [-2.62, -0.46]    1518    1672     0.0067
+  zero_copy                    mapper_k1_lam0.01_allheads       -28.52           [-29.77, -27.30]    1011    3875          0
+  zero_copy                    mapper_k8_lam0.01_allheads       -36.95           [-38.18, -35.74]     851    4562          0
+  mean_pred                    mapper_k1_lam0.01_allheads       -26.99           [-28.10, -25.87]     699    3409          0
+  mean_pred                    mapper_k8_lam0.01_allheads       -35.42           [-36.56, -34.27]     581    4138          0
+  mapper_k1_lam0.01_allheads   mapper_k8_lam0.01_allheads        -8.43             [-9.14, -7.75]     260    1107   1.5e-124
+
+=== 2026-10-07 15:57:16 PAIR_DONE configs/qwen3_1.7b_to_4b.yaml ===
+
+=== 2026-10-07 15:57:16 disk at end ===
+overlay         120G   62G   59G  52% /
+ALL_DONE
+EXIT 0 15:57:16

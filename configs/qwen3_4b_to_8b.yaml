@@ -1,0 +1,44 @@
+# Qwen3-4B -> Qwen3-8B: a PURE WIDTH change (36 -> 36 layers, hidden 2560 -> 4096).
+# One of the two "minimum family matrix" pairs (with qwen3_1.7b_to_4b.yaml) chosen to
+# separate depth mismatch from width mismatch: 0.6B->1.7B (done) and this pair keep depth
+# fixed; 14B->32B (done) keeps hidden size fixed and changes only depth; 1.7B->4B changes
+# both. Same protocol as the 14B->32B replication: 500x1024 calibration, all-heads k=8,
+# lambda=0.01, HellaSwag only. Sized for one 40-80 GB GPU with >=200 GB free disk.
+source: Qwen/Qwen3-4B
+target: Qwen/Qwen3-8B
+output_dir: results/qwen3_4b_to_8b
+
+calibration:
+  dataset: fineweb-edu
+  n_seqs: 500          # paper: 500 sequences
+  seq_len: 1024        # paper: 1024 tokens
+  stride: 4            # ~128K tokens, the paper's calibration size
+  seed: 0
+
+runtime:
+  chunk: 25            # sequences per store shard (20 shards; --holdout-shards 2 = last 50 seqs)
+  batch_size: 8
+  dtype: bfloat16      # Qwen3's native dtype, as in the 14B->32B run
+  store_dtype: float16 # KV on disk; capture refuses non-finite values
+  device: cuda
+  store_dir: results/kv   # keyed by model, so the 4B store is shared with qwen3_1.7b_to_4b.yaml
+
+probe:
+  gram_dtype: float32
+  gram_device: cuda    # 36x36x8 grid, well under the 14B->32B footprint
+  rope_diagonal_only: true
+
+fit:
+  lambdas: [0.01]      # paper's value
+  k_sweep: [8]         # pass --k explicitly in the run script
+  max_gram_gb: 30      # all-heads k=8: ~1.2 GB fp64 Gram per target layer, 36 layers
+  gram_device: cuda
+
+eval:
+  wikitext_seqs: 64
+  prefix_len: 512
+  store_budget_gb: 30  # 4B source KV ~144 KB/token at 36 layers; HellaSwag ~71 GB total, so
+                       # 3 rounds of ~30 GB: sized for a 120 GB disk (see run_pair.sh header)
+  keep_stores: false   # two pairs share one pod; free the ~71 GB after a clean run
+  tasks:
+    hellaswag: {num_fewshot: 0}

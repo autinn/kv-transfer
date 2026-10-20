@@ -1,11 +1,57 @@
-# Cross-Model KV Cache Transfer — Qwen3 0.6B → 1.7B
+# Cross-Model KV Cache Transfer in the Qwen3 Family
 
-A replication of **"Cross-Model KV Cache Transfer in LLM Families: A Closed-Form Linear
-Mapping for Prefill Reuse"** ([arXiv 2608.03893](https://arxiv.org/html/2608.03893v1),
-Heo et al., NVIDIA), tested one scale below anything the paper reports.
+A replication and extension of **"Cross-Model KV Cache Transfer in LLM Families: A
+Closed-Form Linear Mapping for Prefill Reuse"** ([arXiv 2608.03893](https://arxiv.org/html/2608.03893v1),
+Heo et al., NVIDIA). A small model reads the prompt; a ridge regression fitted in closed
+form maps its KV cache into a larger model's format; the larger model answers without
+running prefill itself.
 
-**[REPORT.md](REPORT.md)** — what was measured and verified.
-**[NEXT_STEPS.md](NEXT_STEPS.md)** — what to run on a rented GPU, and which GPU to rent.
+Tested on four Qwen3 pairs, from 0.6B → 1.7B (below anything the paper reports) up to the
+paper's own 14B → 32B, chosen so that depth mismatch and width mismatch can be separated.
+
+---
+
+## Results so far
+
+HellaSwag (all 10,042 questions, zero-shot, acc_norm), retention = mapped / standalone
+target. Mappers: all-heads features, λ = 0.01, 500 × 1,024 FineWeb-Edu calibration tokens.
+
+| Pair | What changes | Zero-copy | k = 1 | **k = 8** | Held-out key R² (k = 8) |
+|---|---|---:|---:|---:|---:|
+| 0.6B → 1.7B | width (28 → 28 layers) | 56.1% | 89.3% | **92.2%** | 0.710 |
+| 1.7B → 4B | depth + width (28 → 36) | 38.4% | 80.0% | **92.3%** | 0.707 |
+| 4B → 8B | width (36 → 36) | 91.8% | 92.9% | **95.5%** | 0.752 |
+| 14B → 32B | depth (40 → 64) | 68.4% | — | **97.8%** | 0.730 |
+
+*Zero-copy* pastes the source cache in unmapped (layer-aligned): the baseline the
+mapper has to beat. Every k = 8 vs zero-copy and k = 8 vs k = 1 difference is significant
+on a paired test (`08_paired_test.py`; smallest p = 3e−21).
+
+What the four pairs say so far:
+
+1. **Retention tracks scale, not depth or width mismatch.** The pure-depth pair is the best.
+2. **Depth mismatch changes the mechanism.** At equal depth one source layer does almost
+   all the work (k = 8 adds ~2 points); at unequal depth multi-layer selection is the main
+   ingredient (+8.4 points on 1.7B → 4B).
+3. **Layer alignment is diagonal at equal depth and piecewise at unequal depth**, never
+   the proportional stretch a naive alignment assumes.
+4. **Qwen3-4B and 8B caches are nearly interchangeable unmapped** (92% zero-copy).
+
+Sanity checks that gate every number: mapping a model onto itself reproduces its logits
+(max error 2.9e−05); the oracle graft (target's own cache through the same graft path)
+matches standalone within ±0.08 points; RoPE handling is checked against Hugging Face's.
+
+### Reports, in order
+
+| Report | What it covers |
+|---|---|
+| [REPORT.md](REPORT.md) | Pipeline and guardrails on an 8 GB M1; what was verified first |
+| [REPORT2.md](REPORT2.md) | 0.6B → 1.7B: probe, mapper fits, perplexity; original proposal |
+| [REPORT3.md](REPORT3.md) | 0.6B → 1.7B full run on an A10, the k ≥ 2 value-map bug fix, benchmark retention |
+| [REPORT4.md](REPORT4.md) | Scoped replication of the paper's 14B → 32B on an H100 |
+| [REPORT5.md](REPORT5.md) | 4B → 8B and 1.7B → 4B: the depth-vs-width matrix |
+| [VIS.md](VIS.md) | Guide to the plots in `results/plots/` |
+| [GPU.md](GPU.md), [NEXT_STEPS.md](NEXT_STEPS.md) | Rented-GPU setup and the run plan |
 
 ---
 
@@ -188,7 +234,7 @@ CONFIG=configs/qwen3_14b_to_32b.yaml bash scripts/run_all.sh   # paper's pair, 8
 Or step by step:
 
 ```bash
-pytest tests/ -q -m "not slow"     # 58 fast tests, no downloads
+pytest tests/ -q -m "not slow"     # 73 fast tests, no downloads
 pytest tests/ -q -m slow           # guardrails on real 0.6B + tiny-pair script run
 
 C=configs/qwen3_0.6b_to_1.7b.yaml
@@ -257,19 +303,50 @@ Developed on an 8 GB M1, which shaped the design:
 
 ---
 
+## Reproducing the current results
+
+**1. Quick check, any machine (~5 GB of downloads; minutes on a GPU, longer on CPU).** Runs every stage on the
+real 0.6B → 1.7B pair at toy size. The numbers are not results; the check is that the
+pipeline runs and the graft path is exact.
+
+```bash
+pytest tests/ -q -m "not slow"                       # expect: 73 passed
+CONFIG=configs/smoke_0.6b_to_1.7b.yaml N_SEQS=16 DEVICE=cpu bash scripts/run_all.sh   # or DEVICE=mps / cuda
+```
+
+Expected at the end: a retention table where `standalone` and `oracle` are both 100.0 and
+the mapper / zero-copy rows are below it (50 questions each, so they are noisy).
+
+**2. One full pair, the protocol behind the results table (A100 80 GB, ≥120 GB disk).**
+
+```bash
+bash scripts/run_pair.sh configs/qwen3_4b_to_8b.yaml     # ~2 h
+bash scripts/run_pair.sh configs/qwen3_1.7b_to_4b.yaml   # ~1.3 h
+```
+
+Expected output, in `results/<pair>/eval_tasks.json` (HellaSwag acc_norm):
+
+| Config | 4B → 8B | 1.7B → 4B |
+|---|---:|---:|
+| standalone | 0.7494 | 0.6850 |
+| oracle | 0.7501 | 0.6845 |
+| zero_copy | 0.6879 | 0.2630 |
+| mapper_k1_lam0.01_allheads | 0.6963 | 0.5482 |
+| mapper_k8_lam0.01_allheads | **0.7156** | **0.6325** |
+
+plus `heldout_r2.json` (k = 8 key R² ≈ 0.75 and 0.71) and `probe_report_n500.txt`.
+14B → 32B: `configs/qwen3_14b_to_32b_replication.yaml`, see [REPORT4.md](REPORT4.md)
+(k = 8 all-heads acc_norm 0.8093). The committed `results/` directories hold the outputs
+of these runs; fitted mappers (2.3 GB each) are not committed.
+
+---
+
 ## Status
 
-| Phase | State |
+| Part | State |
 |---|---|
-| 0 — verified math core | **done** — 20 fast tests + 4 guardrails green |
-| 1 — calibration data | **done** |
-| 2 — R² linear-structure probe | code done, self-tested; needs a machine that can hold the 1.7B |
-| 3 — fit + k-sweep | code done |
-| 4 — perplexity + retention | code done |
-| 5 — writeup | pending results |
-
-Everything is implemented and tested; the blocker is hardware. The development machine
-runs at ~0.06 GB free with 9–12 GB of swap in use before this project starts, and
-Qwen3-1.7B needs ~3.4 GB contiguous — loaded alone it is fine, but there is no room
-alongside a normal desktop session. Details and measurements in
-[REPORT.md §5](REPORT.md).
+| Pipeline: capture → probe → fit → eval | **done**, guardrails green |
+| Paper's 14B → 32B replication | **done**: 97.8% HellaSwag retention at k = 8 |
+| Family matrix (four pairs) | **done**: REPORT5 |
+| Other benchmarks, length generalisation, mapper anatomy | next |
+| Write-up | in progress |
