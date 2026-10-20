@@ -23,7 +23,8 @@ def resolve_runtime(rt: dict, device: str | None = None) -> dict:
     return rt
 
 
-def load_model(name: str, dtype, device: str, device_map: str | None = None):
+def load_model(name: str, dtype, device: str, device_map: str | None = None,
+               attn_implementation: str | None = None):
     """Load a causal LM straight onto its device.
 
     Loading with `device_map` puts weights on the GPU as they are read, so a 64 GB
@@ -34,10 +35,11 @@ def load_model(name: str, dtype, device: str, device_map: str | None = None):
 
     if isinstance(dtype, str):
         dtype = getattr(torch, dtype)
+    kw = {"attn_implementation": attn_implementation} if attn_implementation else {}
     if device_map or str(device).startswith("cuda"):
-        m = AutoModelForCausalLM.from_pretrained(name, dtype=dtype, device_map=device_map or device)
+        m = AutoModelForCausalLM.from_pretrained(name, dtype=dtype, device_map=device_map or device, **kw)
     else:
-        m = AutoModelForCausalLM.from_pretrained(name, dtype=dtype)
+        m = AutoModelForCausalLM.from_pretrained(name, dtype=dtype, **kw)
         if device != "cpu":
             m = m.to(device)
     m.eval()

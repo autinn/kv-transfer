@@ -194,3 +194,30 @@ def test_topk_grams_state_dict_roundtrip_both_modes():
         assert g2.all_heads == all_heads and set(g2.K) == set(g.K)
         for a, b in zip(g.solve_heads("V", 0, 0.01), g2.solve_heads("V", 0, 0.01)):
             torch.testing.assert_close(a.W, b.W)
+
+
+def test_stacked_all_heads_matches_per_head_reference():
+    """map_content's one-matmul-per-layer all_heads path equals the per-head loop it
+    replaced, including different K and V source selections and unequal depths."""
+    torch.manual_seed(0)
+    H, D, Ls, Lt, S = 3, 8, 4, 5, 7
+    sel_k = {lt: [lt % Ls, (lt + 1) % Ls] for lt in range(Lt)}
+    sel_v = {lt: [(lt + 2) % Ls, lt % Ls] for lt in range(Lt)}
+    m = KVMapper(sel_k, D, H, 1e6, n_src_layers=Ls, src_layers_v=sel_v, all_heads=True)
+    for kind in ("K", "V"):
+        for lt in range(Lt):
+            for h in range(H):
+                m.set(kind, lt, h, torch.randn(2 * H * D, D), torch.randn(D), 0.0)
+    src_k = [torch.randn(1, H, S, D) for _ in range(Ls)]
+    src_v = [torch.randn(1, H, S, D) for _ in range(Ls)]
+    got_k, got_v = m.map_content(src_k, src_v)
+    for lt in range(Lt):
+        xk = torch.cat([src_k[ls][:, h2] for ls in sel_k[lt] for h2 in range(H)], dim=-1)
+        xv = torch.cat([src_v[ls][:, h2] for ls in sel_v[lt] for h2 in range(H)], dim=-1)
+        for h in range(H):
+            torch.testing.assert_close(got_k[lt][:, h], xk @ m.K[(lt, h)].W + m.K[(lt, h)].b)
+            torch.testing.assert_close(got_v[lt][:, h], xv @ m.V[(lt, h)].W + m.V[(lt, h)].b)
+    # Changing one map after a call must not reuse the stale stacked weights.
+    m.set("K", 0, 1, torch.zeros(2 * H * D, D), torch.ones(D), 0.0)
+    k2, _ = m.map_content(src_k, src_v)
+    torch.testing.assert_close(k2[0][:, 1], torch.ones(1, S, D))

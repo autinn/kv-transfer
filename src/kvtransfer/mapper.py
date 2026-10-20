@@ -66,6 +66,12 @@ class KVMapper:
         self.K: dict[tuple[int, int], HeadMap] = {}
         self.V: dict[tuple[int, int], HeadMap] = {}
         self.device = torch.device("cpu")
+        # Precision map_content computes in. float32 for every fit and eval; bfloat16
+        # only for timing the transfer the way a serving system would run it.
+        self.dtype = torch.float32
+        # all_heads: per target layer, the 8 heads' W stacked side by side (built on
+        # first use, dropped whenever the maps change).
+        self._stacked: dict | None = None
 
     @property
     def n_tgt_layers(self) -> int:
@@ -74,16 +80,34 @@ class KVMapper:
     def set(self, kind: str, lt: int, h: int, W, b, r2: float) -> None:
         store = self.K if kind == "K" else self.V
         store[(lt, h)] = HeadMap(
-            W.to(self.device, torch.float32), b.to(self.device, torch.float32), float(r2)
+            W.to(self.device, self.dtype), b.to(self.device, self.dtype), float(r2)
         )
+        self._stacked = None
 
-    def to(self, device) -> "KVMapper":
-        """Move the maps to `device`; `map_content` then runs there."""
+    def to(self, device, dtype: torch.dtype | None = None) -> "KVMapper":
+        """Move the maps to `device` (and optionally `dtype`); `map_content` then runs
+        there, in that precision."""
         self.device = torch.device(device)
+        if dtype is not None:
+            self.dtype = dtype
         for store in (self.K, self.V):
             for key, m in store.items():
-                store[key] = HeadMap(m.W.to(self.device), m.b.to(self.device), m.r2)
+                store[key] = HeadMap(m.W.to(self.device, self.dtype), m.b.to(self.device, self.dtype), m.r2)
+        self._stacked = None
         return self
+
+    def _stack(self) -> dict:
+        """(kind, target layer) -> (W, b) with every head's map side by side:
+        W (k*H*D, H*D), b (H*D). In all_heads mode every head of a layer reads the same
+        features, so one matmul against this replaces H per-head matmuls exactly."""
+        if self._stacked is None:
+            self._stacked = {
+                (kind, lt): (torch.cat([store[(lt, h)].W for h in range(self.kv_heads)], dim=1),
+                             torch.cat([store[(lt, h)].b for h in range(self.kv_heads)]))
+                for kind, store in (("K", self.K), ("V", self.V))
+                for lt in range(self.n_tgt_layers)
+            }
+        return self._stacked
 
     def check_compat(self, n_src_layers: int, n_tgt_layers: int, kv_heads: int, head_dim: int) -> None:
         """Refuse to apply a mapper to a model pair it was not fitted for."""
@@ -138,28 +162,51 @@ class KVMapper:
                 f"{len(src_v)} value layers"
             )
         # Each source layer may feed several target layers; move it to the device once.
-        sk = {ls: src_k[ls].to(dev, torch.float32) for ls in needed}
-        sv = {ls: src_v[ls].to(dev, torch.float32) for ls in needed}
+        sk = {ls: src_k[ls].to(dev, self.dtype) for ls in needed}
+        sv = {ls: src_v[ls].to(dev, self.dtype) for ls in needed}
+        if self.all_heads:
+            return self._map_all_heads(sk, sv)
         out_k, out_v = [], []
         for lt in range(self.n_tgt_layers):
             srcs, srcs_v = self.src_layers[lt], self.src_layers_v[lt]
             B, H, S, D = sk[srcs[0]].shape
-            ks = torch.empty(B, H, S, D, dtype=torch.float32, device=dev)
-            vs = torch.empty(B, H, S, D, dtype=torch.float32, device=dev)
-            # All-heads features don't depend on the target head, so build them once
-            # per target layer -- matches stream.TopKGrams.update's fitting-time shape.
-            if self.all_heads:
-                xk_all = torch.cat([sk[ls][:, h2] for ls in srcs for h2 in range(H)], dim=-1)
-                xv_all = torch.cat([sv[ls][:, h2] for ls in srcs_v for h2 in range(H)], dim=-1)
+            ks = torch.empty(B, H, S, D, dtype=self.dtype, device=dev)
+            vs = torch.empty(B, H, S, D, dtype=self.dtype, device=dev)
             for h in range(H):
-                # (B, S, k*D) same-head, or (B, S, k*H*D) all-heads.
-                xk = xk_all if self.all_heads else torch.cat([sk[ls][:, h] for ls in srcs], dim=-1)
-                xv = xv_all if self.all_heads else torch.cat([sv[ls][:, h] for ls in srcs_v], dim=-1)
+                # (B, S, k*D): head h of each selected source layer.
+                xk = torch.cat([sk[ls][:, h] for ls in srcs], dim=-1)
+                xv = torch.cat([sv[ls][:, h] for ls in srcs_v], dim=-1)
                 mk, mv = self.K[(lt, h)], self.V[(lt, h)]
                 ks[:, h] = xk @ mk.W + mk.b
                 vs[:, h] = xv @ mv.W + mv.b
             out_k.append(ks)
             out_v.append(vs)
+        return out_k, out_v
+
+    def _map_all_heads(self, sk: dict, sv: dict):
+        """all_heads mapping, one matmul per (target layer, kind).
+
+        The feature vector is every source head of each selected layer, layer-major then
+        head then dim -- the order stream.TopKGrams.update fits in. Each source layer is
+        flattened to (B, S, H*D) once, however many target layers read it.
+        """
+        def flat(x):  # (B, H, S, D) -> (B, S, H*D), head-major within a position
+            B, H, S, D = x.shape
+            return x.transpose(1, 2).reshape(B, S, H * D)
+
+        fk, fv = {ls: flat(x) for ls, x in sk.items()}, {ls: flat(x) for ls, x in sv.items()}
+        stacked = self._stack()
+        H, D = self.kv_heads, self.head_dim
+        out_k, out_v = [], []
+        for lt in range(self.n_tgt_layers):
+            for kind, feats, sel, out in (("K", fk, self.src_layers, out_k),
+                                          ("V", fv, self.src_layers_v, out_v)):
+                srcs = sel[lt]
+                x = feats[srcs[0]] if len(srcs) == 1 else torch.cat([feats[ls] for ls in srcs], dim=-1)
+                W, b = stacked[(kind, lt)]
+                y = torch.addmm(b, x.reshape(-1, x.shape[-1]), W)        # (B*S, H*D)
+                B, S = x.shape[0], x.shape[1]
+                out.append(y.view(B, S, H, D).transpose(1, 2).contiguous())
         return out_k, out_v
 
     @torch.no_grad()

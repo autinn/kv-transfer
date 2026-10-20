@@ -65,13 +65,16 @@ def cache_to_content(cache, head_dim: int, rope_theta: float, offset: int = 0):
     keys, values = [], []
     layers = cache.layers if hasattr(cache, "layers") else None
     n = len(layers) if layers is not None else len(cache)
+    tables = {}  # every layer has the same positions; build cos/sin once per (S, device)
     for l in range(n):
         k = layers[l].keys if layers is not None else cache[l][0]
         v = layers[l].values if layers is not None else cache[l][1]
-        S = k.shape[2]
-        cos, sin = rope_tables_for(
-            S, head_dim, rope_theta, device=k.device, dtype=torch.float32, offset=offset
-        )
+        key = (k.shape[2], k.device)
+        if key not in tables:
+            tables[key] = rope_tables_for(
+                k.shape[2], head_dim, rope_theta, device=k.device, dtype=torch.float32, offset=offset
+            )
+        cos, sin = tables[key]
         keys.append(strip_rope(k.to(torch.float32), cos, sin))
         values.append(v.to(torch.float32))
     return keys, values
