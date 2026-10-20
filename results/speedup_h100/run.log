@@ -1,0 +1,167 @@
+
+=== 2026-10-20 16:21:14 models (download if missing) ===
+[90mHint: The `hf-cli` skill is not installed. Run `hf skills add -g` to teach your AI agents how to use the `hf` CLI.[0m
+Fetching 18 files:   0%|          | 0/18 [00:00<?, ?it/s]Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Fetching 18 files:   6%|▌         | 1/18 [00:00<00:02,  6.12it/s]Fetching 18 files:  33%|███▎      | 6/18 [00:00<00:00, 21.62it/s]Fetching 18 files:  33%|███▎      | 6/18 [00:20<00:00, 21.62it/s]Fetching 18 files:  39%|███▉      | 7/18 [03:51<08:28, 46.27s/it]Fetching 18 files:  44%|████▍     | 8/18 [03:51<06:00, 36.02s/it]Fetching 18 files:  56%|█████▌    | 10/18 [03:53<02:58, 22.37s/it]Fetching 18 files:  61%|██████    | 11/18 [03:53<02:03, 17.66s/it]Fetching 18 files:  67%|██████▋   | 12/18 [06:23<04:54, 49.03s/it]Fetching 18 files:  72%|███████▏  | 13/18 [06:27<03:07, 37.47s/it]Fetching 18 files:  78%|███████▊  | 14/18 [06:28<01:51, 27.87s/it]Fetching 18 files:  83%|████████▎ | 15/18 [06:31<01:02, 20.98s/it]Fetching 18 files:  94%|█████████▍| 17/18 [06:32<00:11, 11.94s/it]Fetching 18 files: 100%|██████████| 18/18 [06:32<00:00,  9.16s/it]Fetching 18 files: 100%|██████████| 18/18 [06:32<00:00, 21.80s/it]
+Fetching 27 files:   0%|          | 0/27 [00:00<?, ?it/s]Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Fetching 27 files:   4%|▎         | 1/27 [00:00<00:04,  6.27it/s]Fetching 27 files:  22%|██▏       | 6/27 [00:00<00:01, 19.94it/s]Fetching 27 files:  22%|██▏       | 6/27 [00:20<00:01, 19.94it/s]Fetching 27 files:  26%|██▌       | 7/27 [06:24<25:39, 76.97s/it]Fetching 27 files:  30%|██▉       | 8/27 [06:28<19:15, 60.80s/it]Fetching 27 files:  37%|███▋      | 10/27 [06:33<10:48, 38.12s/it]Fetching 27 files:  41%|████      | 11/27 [06:34<08:00, 30.02s/it]Fetching 27 files:  44%|████▍     | 12/27 [06:36<05:50, 23.35s/it]Fetching 27 files:  48%|████▊     | 13/27 [06:37<04:10, 17.90s/it]Fetching 27 files:  52%|█████▏    | 14/27 [06:38<02:52, 13.26s/it]Fetching 27 files:  56%|█████▌    | 15/27 [13:21<24:05, 120.48s/it]Fetching 27 files:  59%|█████▉    | 16/27 [13:25<16:04, 87.69s/it] Fetching 27 files:  63%|██████▎   | 17/27 [13:26<10:25, 62.57s/it]Fetching 27 files:  67%|██████▋   | 18/27 [13:26<06:40, 44.52s/it]Fetching 27 files:  70%|███████   | 19/27 [13:26<04:12, 31.52s/it]Fetching 27 files:  74%|███████▍  | 20/27 [13:27<02:36, 22.42s/it]Fetching 27 files:  78%|███████▊  | 21/27 [13:27<01:34, 15.82s/it]Fetching 27 files:  81%|████████▏ | 22/27 [13:28<00:56, 11.30s/it]Fetching 27 files:  85%|████████▌ | 23/27 [13:29<00:33,  8.38s/it]Fetching 27 files:  89%|████████▉ | 24/27 [13:30<00:18,  6.12s/it]Fetching 27 files:  96%|█████████▋| 26/27 [13:32<00:03,  3.67s/it]Fetching 27 files: 100%|██████████| 27/27 [14:13<00:00, 12.85s/it]Fetching 27 files: 100%|██████████| 27/27 [14:13<00:00, 31.60s/it]
+Fetching 15 files:   0%|          | 0/15 [00:00<?, ?it/s]Fetching 15 files:   7%|▋         | 1/15 [00:00<00:01,  8.91it/s]Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Fetching 15 files:  40%|████      | 6/15 [00:00<00:00, 21.05it/s]Fetching 15 files:  53%|█████▎    | 8/15 [00:00<00:00, 20.17it/s]Fetching 15 files:  67%|██████▋   | 10/15 [00:02<00:01,  3.27it/s]Fetching 15 files:  67%|██████▋   | 10/15 [00:20<00:01,  3.27it/s]Fetching 15 files:  73%|███████▎  | 11/15 [01:01<00:45, 11.30s/it]Fetching 15 files:  80%|████████  | 12/15 [02:41<01:30, 30.10s/it]Fetching 15 files:  87%|████████▋ | 13/15 [03:03<00:56, 28.15s/it]Fetching 15 files:  93%|█████████▎| 14/15 [03:03<00:21, 21.17s/it]Fetching 15 files: 100%|██████████| 15/15 [03:03<00:00, 12.21s/it]
+
+=== 2026-10-20 16:45:05 14B -> 32B, k=8 all-heads ===
+Qwen/Qwen3-14B -> Qwen/Qwen3-32B  |  NVIDIA H100 PCIe  |  k=8 all-heads  |  warmup 50, trials 30  |  attn sdpa
+
+=== re-prefill: target body ===
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/707 [00:00<?, ?it/s]Loading weights:   0%|          | 1/707 [00:00<01:13,  9.61it/s]Loading weights:   0%|          | 2/707 [00:00<02:36,  4.51it/s]Loading weights:   1%|          | 5/707 [00:00<01:09, 10.07it/s]Loading weights:   2%|▏         | 12/707 [00:00<00:28, 24.34it/s]Loading weights:   2%|▏         | 16/707 [00:00<00:27, 25.13it/s]Loading weights:   3%|▎         | 23/707 [00:00<00:20, 34.19it/s]Loading weights:   4%|▍         | 27/707 [00:01<00:21, 31.60it/s]Loading weights:   5%|▍         | 32/707 [00:01<00:20, 33.44it/s]Loading weights:   5%|▌         | 38/707 [00:01<00:18, 36.01it/s]Loading weights:   6%|▌         | 42/707 [00:01<00:18, 36.62it/s]Loading weights:   7%|▋         | 48/707 [00:01<00:20, 32.47it/s]Loading weights:   8%|▊         | 58/707 [00:01<00:14, 44.55it/s]Loading weights:   9%|▉         | 63/707 [00:01<00:15, 42.92it/s]Loading weights:  10%|▉         | 69/707 [00:02<00:14, 44.07it/s]Loading weights:  10%|█         | 74/707 [00:02<00:15, 40.63it/s]Loading weights:  11%|█▏        | 81/707 [00:02<00:14, 44.29it/s]Loading weights:  12%|█▏        | 86/707 [00:02<00:15, 40.42it/s]Loading weights:  13%|█▎        | 91/707 [00:02<00:17, 34.26it/s]Loading weights:  14%|█▍        | 99/707 [00:02<00:14, 41.77it/s]Loading weights:  15%|█▍        | 104/707 [00:03<00:15, 39.45it/s]Loading weights:  15%|█▌        | 109/707 [00:03<00:14, 41.40it/s]Loading weights:  16%|█▌        | 114/707 [00:03<00:15, 38.94it/s]Loading weights:  17%|█▋        | 119/707 [00:03<00:20, 28.86it/s]Loading weights:  19%|█▉        | 136/707 [00:03<00:10, 52.72it/s]Loading weights:  20%|██        | 143/707 [00:03<00:11, 48.41it/s]Loading weights:  21%|██        | 149/707 [00:04<00:15, 35.85it/s]Loading weights:  22%|██▏       | 159/707 [00:04<00:12, 42.49it/s]Loading weights:  23%|██▎       | 165/707 [00:04<00:12, 45.14it/s]Loading weights:  24%|██▍       | 171/707 [00:04<00:14, 36.36it/s]Loading weights:  25%|██▌       | 179/707 [00:04<00:12, 41.68it/s]Loading weights:  26%|██▌       | 184/707 [00:04<00:13, 39.04it/s]Loading weights:  27%|██▋       | 191/707 [00:05<00:11, 43.49it/s]Loading weights:  28%|██▊       | 196/707 [00:05<00:12, 39.48it/s]Loading weights:  28%|██▊       | 201/707 [00:05<00:12, 39.59it/s]Loading weights:  29%|██▉       | 206/707 [00:05<00:13, 37.52it/s]Loading weights:  30%|███       | 213/707 [00:05<00:11, 42.82it/s]Loading weights:  31%|███       | 218/707 [00:05<00:12, 39.41it/s]Loading weights:  32%|███▏      | 224/707 [00:05<00:11, 41.91it/s]Loading weights:  32%|███▏      | 229/707 [00:06<00:14, 32.77it/s]Loading weights:  34%|███▎      | 237/707 [00:06<00:11, 40.47it/s]Loading weights:  35%|███▍      | 246/707 [00:06<00:11, 40.98it/s]Loading weights:  36%|███▋      | 257/707 [00:06<00:09, 47.63it/s]Loading weights:  37%|███▋      | 262/707 [00:07<00:13, 33.53it/s]Loading weights:  39%|███▉      | 279/707 [00:07<00:07, 53.96it/s]Loading weights:  40%|████      | 286/707 [00:07<00:08, 49.40it/s]Loading weights:  41%|████▏     | 292/707 [00:07<00:09, 43.71it/s]Loading weights:  42%|████▏     | 299/707 [00:07<00:09, 42.84it/s]Loading weights:  44%|████▎     | 309/707 [00:07<00:07, 51.78it/s]Loading weights:  45%|████▍     | 315/707 [00:08<00:09, 42.25it/s]Loading weights:  46%|████▌     | 323/707 [00:08<00:08, 47.80it/s]Loading weights:  47%|████▋     | 329/707 [00:08<00:08, 42.81it/s]Loading weights:  47%|████▋     | 335/707 [00:08<00:08, 41.92it/s]Loading weights:  48%|████▊     | 342/707 [00:08<00:07, 45.91it/s]Loading weights:  49%|████▉     | 347/707 [00:08<00:09, 36.49it/s]Loading weights:  50%|█████     | 356/707 [00:08<00:07, 45.03it/s]Loading weights:  51%|█████     | 362/707 [00:09<00:08, 40.33it/s]Loading weights:  52%|█████▏    | 368/707 [00:09<00:08, 42.21it/s]Loading weights:  53%|█████▎    | 373/707 [00:09<00:07, 43.42it/s]Loading weights:  54%|█████▎    | 379/707 [00:09<00:07, 41.22it/s]Loading weights:  54%|█████▍    | 384/707 [00:09<00:07, 43.03it/s]Loading weights:  55%|█████▌    | 390/707 [00:09<00:09, 34.95it/s]Loading weights:  56%|█████▋    | 399/707 [00:10<00:07, 43.44it/s]Loading weights:  57%|█████▋    | 404/707 [00:10<00:07, 40.48it/s]Loading weights:  58%|█████▊    | 411/707 [00:10<00:06, 44.52it/s]Loading weights:  59%|█████▉    | 416/707 [00:10<00:07, 38.76it/s]Loading weights:  60%|█████▉    | 421/707 [00:10<00:06, 40.96it/s]Loading weights:  60%|██████    | 426/707 [00:10<00:07, 38.23it/s]Loading weights:  61%|██████    | 432/707 [00:10<00:06, 40.49it/s]Loading weights:  62%|██████▏   | 437/707 [00:11<00:07, 36.41it/s]Loading weights:  63%|██████▎   | 442/707 [00:11<00:08, 32.30it/s]Loading weights:  64%|██████▍   | 455/707 [00:11<00:05, 48.43it/s]Loading weights:  65%|██████▌   | 461/707 [00:11<00:05, 43.38it/s]Loading weights:  66%|██████▌   | 467/707 [00:11<00:05, 40.83it/s]Loading weights:  67%|██████▋   | 474/707 [00:11<00:05, 44.70it/s]Loading weights:  68%|██████▊   | 479/707 [00:12<00:06, 35.73it/s]Loading weights:  69%|██████▊   | 486/707 [00:12<00:05, 36.84it/s]Loading weights:  70%|██████▉   | 494/707 [00:12<00:05, 42.19it/s]Loading weights:  71%|███████   | 500/707 [00:12<00:05, 40.55it/s]Loading weights:  71%|███████▏  | 505/707 [00:12<00:04, 40.73it/s]Loading weights:  72%|███████▏  | 510/707 [00:12<00:04, 40.86it/s]Loading weights:  73%|███████▎  | 515/707 [00:12<00:05, 34.12it/s]Loading weights:  74%|███████▎  | 521/707 [00:13<00:05, 37.19it/s]Loading weights:  74%|███████▍  | 525/707 [00:13<00:05, 31.51it/s]Loading weights:  75%|███████▌  | 532/707 [00:13<00:04, 35.98it/s]Loading weights:  76%|███████▌  | 536/707 [00:13<00:05, 29.20it/s]Loading weights:  77%|███████▋  | 544/707 [00:13<00:04, 34.51it/s]Loading weights:  78%|███████▊  | 548/707 [00:14<00:04, 32.89it/s]Loading weights:  79%|███████▊  | 555/707 [00:14<00:04, 31.56it/s]Loading weights:  80%|███████▉  | 565/707 [00:14<00:03, 40.92it/s]Loading weights:  81%|████████  | 570/707 [00:14<00:03, 36.86it/s]Loading weights:  81%|████████▏ | 576/707 [00:14<00:03, 38.33it/s]Loading weights:  82%|████████▏ | 581/707 [00:14<00:03, 36.85it/s]Loading weights:  83%|████████▎ | 587/707 [00:14<00:03, 39.37it/s]Loading weights:  84%|████████▎ | 592/707 [00:15<00:03, 34.50it/s]Loading weights:  85%|████████▍ | 598/707 [00:15<00:02, 38.73it/s]Loading weights:  85%|████████▌ | 603/707 [00:15<00:02, 34.70it/s]Loading weights:  86%|████████▌ | 609/707 [00:15<00:02, 35.75it/s]Loading weights:  87%|████████▋ | 613/707 [00:15<00:03, 30.31it/s]Loading weights:  88%|████████▊ | 620/707 [00:15<00:02, 34.75it/s]Loading weights:  88%|████████▊ | 624/707 [00:16<00:02, 31.00it/s]Loading weights:  89%|████████▉ | 631/707 [00:16<00:02, 35.78it/s]Loading weights:  90%|████████▉ | 635/707 [00:16<00:02, 31.14it/s]Loading weights:  91%|█████████ | 642/707 [00:16<00:01, 34.61it/s]Loading weights:  91%|█████████▏| 646/707 [00:16<00:02, 29.70it/s]Loading weights:  92%|█████████▏| 652/707 [00:17<00:01, 31.59it/s]Loading weights:  93%|█████████▎| 656/707 [00:17<00:01, 28.33it/s]Loading weights:  94%|█████████▍| 664/707 [00:17<00:01, 34.52it/s]Loading weights:  94%|█████████▍| 668/707 [00:17<00:01, 29.72it/s]Loading weights:  95%|█████████▌| 675/707 [00:17<00:00, 33.43it/s]Loading weights:  96%|█████████▌| 679/707 [00:17<00:00, 30.07it/s]Loading weights:  97%|█████████▋| 686/707 [00:18<00:00, 33.94it/s]Loading weights:  98%|█████████▊| 690/707 [00:18<00:00, 29.50it/s]Loading weights:  99%|█████████▊| 697/707 [00:18<00:00, 33.79it/s]Loading weights:  99%|█████████▉| 701/707 [00:18<00:00, 30.26it/s]Loading weights: 100%|██████████| 707/707 [00:18<00:00, 37.91it/s]
+  prefill          S=    64      67.44 ms (median of 30)
+  prefill          S=   128      58.42 ms (median of 30)
+  prefill          S=   256      71.14 ms (median of 30)
+  prefill          S=   512     111.83 ms (median of 30)
+  prefill          S=  1024     215.24 ms (median of 30)
+  prefill          S=  2048     426.42 ms (median of 30)
+  prefill          S=  4096     854.60 ms (median of 30)
+  prefill          S=  8192    1781.76 ms (median of 30)
+  prefill          S= 16384    3945.86 ms (median of 30)
+  prefill          S= 32768    9256.15 ms (median of 30)
+
+=== transfer: source cache -> target cache ===
+  transfer_float32 S=    64      15.68 ms (median of 30)
+  transfer_float32 S=   128      24.23 ms (median of 30)
+  transfer_float32 S=   256      29.65 ms (median of 30)
+  transfer_float32 S=   512      44.58 ms (median of 30)
+  transfer_float32 S=  1024      77.66 ms (median of 30)
+  transfer_float32 S=  2048     156.98 ms (median of 30)
+  transfer_float32 S=  4096     301.26 ms (median of 30)
+  transfer_float32 S=  8192     586.97 ms (median of 30)
+  transfer_float32 S= 16384    1172.06 ms (median of 30)
+  transfer_float32 S= 32768    2477.03 ms (median of 30)
+  transfer_bfloat16 S=    64      12.14 ms (median of 30)
+  transfer_bfloat16 S=   128      11.63 ms (median of 30)
+  transfer_bfloat16 S=   256      11.79 ms (median of 30)
+  transfer_bfloat16 S=   512      12.00 ms (median of 30)
+  transfer_bfloat16 S=  1024      16.37 ms (median of 30)
+  transfer_bfloat16 S=  2048      28.60 ms (median of 30)
+  transfer_bfloat16 S=  4096      56.42 ms (median of 30)
+  transfer_bfloat16 S=  8192     113.46 ms (median of 30)
+  transfer_bfloat16 S= 16384     216.61 ms (median of 30)
+  transfer_bfloat16 S= 32768     424.51 ms (median of 30)
+
+=== end to end: source prefill + transfer ===
+Loading weights:   0%|          | 0/443 [00:00<?, ?it/s]Loading weights:   0%|          | 1/443 [00:00<01:49,  4.03it/s]Loading weights:   0%|          | 2/443 [00:00<02:06,  3.49it/s]Loading weights:   1%|▏         | 6/443 [00:00<00:38, 11.31it/s]Loading weights:   4%|▎         | 16/443 [00:00<00:13, 31.85it/s]Loading weights:   6%|▌         | 25/443 [00:00<00:10, 41.17it/s]Loading weights:   7%|▋         | 31/443 [00:01<00:09, 44.59it/s]Loading weights:   9%|▊         | 38/443 [00:01<00:08, 45.60it/s]Loading weights:  11%|█         | 47/443 [00:01<00:07, 50.68it/s]Loading weights:  12%|█▏        | 53/443 [00:01<00:07, 51.57it/s]Loading weights:  14%|█▎        | 60/443 [00:01<00:07, 50.92it/s]Loading weights:  16%|█▌        | 70/443 [00:01<00:06, 56.44it/s]Loading weights:  17%|█▋        | 76/443 [00:01<00:06, 53.94it/s]Loading weights:  19%|█▊        | 82/443 [00:01<00:07, 51.52it/s]Loading weights:  21%|██        | 92/443 [00:02<00:06, 56.54it/s]Loading weights:  22%|██▏       | 98/443 [00:02<00:06, 51.37it/s]Loading weights:  23%|██▎       | 104/443 [00:02<00:06, 52.22it/s]Loading weights:  26%|██▌       | 114/443 [00:02<00:05, 57.66it/s]Loading weights:  27%|██▋       | 120/443 [00:02<00:05, 54.29it/s]Loading weights:  28%|██▊       | 126/443 [00:02<00:06, 51.81it/s]Loading weights:  31%|███       | 136/443 [00:03<00:06, 50.92it/s]Loading weights:  33%|███▎      | 147/443 [00:03<00:05, 57.32it/s]Loading weights:  35%|███▍      | 153/443 [00:03<00:05, 54.90it/s]Loading weights:  36%|███▌      | 159/443 [00:03<00:05, 52.60it/s]Loading weights:  38%|███▊      | 169/443 [00:03<00:04, 57.56it/s]Loading weights:  40%|███▉      | 175/443 [00:03<00:04, 54.71it/s]Loading weights:  41%|████      | 181/443 [00:03<00:05, 52.33it/s]Loading weights:  43%|████▎     | 190/443 [00:03<00:04, 54.99it/s]Loading weights:  44%|████▍     | 196/443 [00:04<00:04, 54.66it/s]Loading weights:  46%|████▌     | 202/443 [00:04<00:04, 50.22it/s]Loading weights:  48%|████▊     | 213/443 [00:04<00:03, 58.06it/s]Loading weights:  49%|████▉     | 219/443 [00:04<00:04, 53.09it/s]Loading weights:  51%|█████     | 225/443 [00:04<00:04, 47.41it/s]Loading weights:  53%|█████▎    | 236/443 [00:04<00:03, 55.52it/s]Loading weights:  56%|█████▌    | 246/443 [00:05<00:03, 53.21it/s]Loading weights:  58%|█████▊    | 257/443 [00:05<00:03, 59.38it/s]Loading weights:  60%|█████▉    | 264/443 [00:05<00:03, 57.59it/s]Loading weights:  61%|██████    | 270/443 [00:05<00:03, 49.57it/s]Loading weights:  63%|██████▎   | 279/443 [00:05<00:03, 53.00it/s]Loading weights:  65%|██████▌   | 289/443 [00:05<00:02, 57.34it/s]Loading weights:  67%|██████▋   | 295/443 [00:05<00:02, 56.70it/s]Loading weights:  68%|██████▊   | 301/443 [00:06<00:02, 52.27it/s]Loading weights:  70%|███████   | 312/443 [00:06<00:02, 53.45it/s]Loading weights:  73%|███████▎  | 323/443 [00:06<00:02, 59.86it/s]Loading weights:  74%|███████▍  | 330/443 [00:06<00:01, 58.52it/s]Loading weights:  76%|███████▌  | 336/443 [00:06<00:02, 49.97it/s]Loading weights:  78%|███████▊  | 346/443 [00:06<00:01, 55.00it/s]Loading weights:  80%|████████  | 356/443 [00:07<00:01, 53.44it/s]Loading weights:  83%|████████▎ | 366/443 [00:07<00:01, 56.99it/s]Loading weights:  84%|████████▍ | 372/443 [00:07<00:01, 56.57it/s]Loading weights:  86%|████████▌ | 379/443 [00:07<00:01, 48.93it/s]Loading weights:  88%|████████▊ | 390/443 [00:07<00:00, 56.29it/s]Loading weights:  90%|█████████ | 400/443 [00:07<00:00, 59.80it/s]Loading weights:  92%|█████████▏| 407/443 [00:07<00:00, 57.98it/s]Loading weights:  93%|█████████▎| 413/443 [00:08<00:00, 49.52it/s]Loading weights:  95%|█████████▌| 423/443 [00:08<00:00, 54.64it/s]Loading weights:  98%|█████████▊| 433/443 [00:08<00:00, 59.21it/s]Loading weights:  99%|█████████▉| 440/443 [00:08<00:00, 56.09it/s]Loading weights: 100%|██████████| 443/443 [00:08<00:00, 51.95it/s]
+  source_prefill   S=    64      43.66 ms (median of 30)
+  source_prefill   S=   128      28.38 ms (median of 30)
+  source_prefill   S=   256      34.12 ms (median of 30)
+  source_prefill   S=   512      51.87 ms (median of 30)
+  source_prefill   S=  1024      96.74 ms (median of 30)
+  source_prefill   S=  2048     187.93 ms (median of 30)
+  source_prefill   S=  4096     381.56 ms (median of 30)
+  source_prefill   S=  8192     799.84 ms (median of 30)
+  source_prefill   S= 16384    1709.86 ms (median of 30)
+  source_prefill   S= 32768    4000.24 ms (median of 30)
+  e2e_bfloat16     S=    64      35.82 ms (median of 30)
+  e2e_bfloat16     S=   128      36.47 ms (median of 30)
+  e2e_bfloat16     S=   256      43.36 ms (median of 30)
+  e2e_bfloat16     S=   512      64.07 ms (median of 30)
+  e2e_bfloat16     S=  1024     113.91 ms (median of 30)
+  e2e_bfloat16     S=  2048     218.72 ms (median of 30)
+  e2e_bfloat16     S=  4096     439.21 ms (median of 30)
+  e2e_bfloat16     S=  8192     902.74 ms (median of 30)
+  e2e_bfloat16     S= 16384    1919.59 ms (median of 30)
+  e2e_bfloat16     S= 32768    4441.75 ms (median of 30)
+
+=== speedup = re-prefill / transfer (median ms) ===
+ tokens   prefill   xfer fp32  speedup   xfer bf16  speedup FLOP ratio   e2e bf16  e2e x
+     64     67.44       15.68     4.3x       12.14     5.6x      29.1x      35.82  1.88x
+    128     58.42       24.23     2.4x       11.63     5.0x      29.1x      36.47  1.60x
+    256     71.14       29.65     2.4x       11.79     6.0x      29.2x      43.36  1.64x
+    512    111.83       44.58     2.5x        12.0     9.3x      29.3x      64.07  1.75x
+   1024    215.24       77.66     2.8x       16.37    13.1x      29.6x     113.91  1.89x
+   2048    426.42      156.98     2.7x        28.6    14.9x      30.1x     218.72  1.95x
+   4096     854.6      301.26     2.8x       56.42    15.1x      31.1x     439.21  1.95x
+   8192   1781.76      586.97     3.0x      113.46    15.7x      33.1x     902.74  1.97x
+  16384   3945.86     1172.06     3.4x      216.61    18.2x      37.1x    1919.59  2.06x
+  32768   9256.15     2477.03     3.7x      424.51    21.8x      45.1x    4441.75  2.08x
+
+paper (k=8, 8x H100, FA2): speedup 4.4-25.1x
+      64 tokens: transfer 14.0 ms, re-prefill 61.7 ms, 4.4x
+    8192 tokens: transfer 67.8 ms, re-prefill 1154.8 ms, 17.0x
+   32768 tokens: transfer 277.6 ms, re-prefill 6975.3 ms, 25.1x
+FLOP ratio = re-prefill FLOPs / mapper FLOPs: the speedup if both ran at the same efficiency.
+Measured below it means fixed overhead (Python dispatch, small kernels) dominates.
+Differences from the paper: one GPU (no cross-GPU transfer, which the paper includes); attention kernel sdpa; random-weight mapper (same arithmetic).
+
+saved -> /home/ubuntu/kv-transfer/results/qwen3_14b_to_32b/speedup_NVIDIA_H100_PCIe.json
+
+=== 2026-10-20 17:36:52 8B -> 32B, k=12 all-heads, re-prefill reused from 14B -> 32B ===
+Qwen/Qwen3-8B -> Qwen/Qwen3-32B  |  NVIDIA H100 PCIe  |  k=12 all-heads  |  warmup 50, trials 30  |  attn sdpa
+
+=== re-prefill: reused from results/qwen3_14b_to_32b/speedup_NVIDIA_H100_PCIe.json ===
+
+=== transfer: source cache -> target cache ===
+  transfer_float32 S=    64      23.67 ms (median of 30)
+  transfer_float32 S=   128      30.02 ms (median of 30)
+  transfer_float32 S=   256      41.91 ms (median of 30)
+  transfer_float32 S=   512      61.58 ms (median of 30)
+  transfer_float32 S=  1024     113.16 ms (median of 30)
+  transfer_float32 S=  2048     229.47 ms (median of 30)
+  transfer_float32 S=  4096     451.09 ms (median of 30)
+  transfer_float32 S=  8192     881.35 ms (median of 30)
+  transfer_float32 S= 16384    1748.82 ms (median of 30)
+  transfer_float32 S= 32768    3616.59 ms (median of 30)
+  transfer_bfloat16 S=    64      11.80 ms (median of 30)
+  transfer_bfloat16 S=   128      11.48 ms (median of 30)
+  transfer_bfloat16 S=   256      11.46 ms (median of 30)
+  transfer_bfloat16 S=   512      13.99 ms (median of 30)
+  transfer_bfloat16 S=  1024      19.95 ms (median of 30)
+  transfer_bfloat16 S=  2048      36.16 ms (median of 30)
+  transfer_bfloat16 S=  4096      70.48 ms (median of 30)
+  transfer_bfloat16 S=  8192     141.69 ms (median of 30)
+  transfer_bfloat16 S= 16384     271.28 ms (median of 30)
+  transfer_bfloat16 S= 32768     533.15 ms (median of 30)
+
+=== end to end: source prefill + transfer ===
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/399 [00:00<?, ?it/s]Loading weights:   0%|          | 1/399 [00:00<01:26,  4.61it/s]Loading weights:   1%|          | 2/399 [00:00<01:40,  3.94it/s]Loading weights:   3%|▎         | 12/399 [00:00<00:13, 27.82it/s]Loading weights:   4%|▍         | 17/399 [00:00<00:11, 32.02it/s]Loading weights:   7%|▋         | 28/399 [00:00<00:07, 50.69it/s]Loading weights:  10%|▉         | 38/399 [00:00<00:05, 61.48it/s]Loading weights:  12%|█▏        | 48/399 [00:01<00:05, 68.58it/s]Loading weights:  14%|█▍        | 56/399 [00:01<00:04, 69.68it/s]Loading weights:  16%|█▌        | 64/399 [00:01<00:05, 66.95it/s]Loading weights:  18%|█▊        | 72/399 [00:01<00:05, 61.84it/s]Loading weights:  21%|██        | 82/399 [00:01<00:04, 68.40it/s]Loading weights:  23%|██▎       | 91/399 [00:01<00:04, 70.54it/s]Loading weights:  25%|██▌       | 100/399 [00:01<00:04, 72.55it/s]Loading weights:  27%|██▋       | 108/399 [00:01<00:04, 69.50it/s]Loading weights:  29%|██▉       | 116/399 [00:02<00:04, 63.63it/s]Loading weights:  32%|███▏      | 126/399 [00:02<00:03, 69.66it/s]Loading weights:  34%|███▍      | 136/399 [00:02<00:03, 73.91it/s]Loading weights:  36%|███▌      | 144/399 [00:02<00:03, 72.49it/s]Loading weights:  38%|███▊      | 152/399 [00:02<00:03, 68.76it/s]Loading weights:  40%|███▉      | 159/399 [00:02<00:03, 67.19it/s]Loading weights:  42%|████▏     | 168/399 [00:02<00:03, 69.66it/s]Loading weights:  44%|████▍     | 176/399 [00:02<00:03, 72.29it/s]Loading weights:  46%|████▌     | 184/399 [00:03<00:03, 66.87it/s]Loading weights:  48%|████▊     | 192/399 [00:03<00:03, 62.43it/s]Loading weights:  51%|█████     | 203/399 [00:03<00:02, 71.27it/s]Loading weights:  53%|█████▎    | 213/399 [00:03<00:02, 75.23it/s]Loading weights:  55%|█████▌    | 221/399 [00:03<00:02, 73.76it/s]Loading weights:  57%|█████▋    | 229/399 [00:03<00:02, 69.96it/s]Loading weights:  59%|█████▉    | 237/399 [00:03<00:02, 63.79it/s]Loading weights:  62%|██████▏   | 247/399 [00:03<00:02, 69.39it/s]Loading weights:  64%|██████▍   | 257/399 [00:04<00:01, 74.05it/s]Loading weights:  66%|██████▋   | 265/399 [00:04<00:01, 73.58it/s]Loading weights:  68%|██████▊   | 273/399 [00:04<00:01, 68.44it/s]Loading weights:  70%|███████   | 281/399 [00:04<00:01, 64.81it/s]Loading weights:  73%|███████▎  | 291/399 [00:04<00:01, 71.41it/s]Loading weights:  75%|███████▌  | 301/399 [00:04<00:01, 75.70it/s]Loading weights:  77%|███████▋  | 309/399 [00:04<00:01, 74.79it/s]Loading weights:  79%|███████▉  | 317/399 [00:04<00:01, 70.95it/s]Loading weights:  81%|████████▏ | 325/399 [00:05<00:01, 65.50it/s]Loading weights:  84%|████████▍ | 335/399 [00:05<00:00, 71.96it/s]Loading weights:  86%|████████▋ | 345/399 [00:05<00:00, 76.26it/s]Loading weights:  88%|████████▊ | 353/399 [00:05<00:00, 73.70it/s]Loading weights:  90%|█████████ | 361/399 [00:05<00:00, 69.92it/s]Loading weights:  92%|█████████▏| 369/399 [00:05<00:00, 68.22it/s]Loading weights:  95%|█████████▍| 379/399 [00:05<00:00, 74.52it/s]Loading weights:  97%|█████████▋| 389/399 [00:05<00:00, 78.54it/s]Loading weights:  99%|█████████▉| 397/399 [00:05<00:00, 76.26it/s]Loading weights: 100%|██████████| 399/399 [00:05<00:00, 66.55it/s]
+  source_prefill   S=    64      21.85 ms (median of 30)
+  source_prefill   S=   128      22.08 ms (median of 30)
+  source_prefill   S=   256      22.15 ms (median of 30)
+  source_prefill   S=   512      32.80 ms (median of 30)
+  source_prefill   S=  1024      56.80 ms (median of 30)
+  source_prefill   S=  2048     111.14 ms (median of 30)
+  source_prefill   S=  4096     226.53 ms (median of 30)
+  source_prefill   S=  8192     470.57 ms (median of 30)
+  source_prefill   S= 16384    1039.19 ms (median of 30)
+  source_prefill   S= 32768    2480.29 ms (median of 30)
+  e2e_bfloat16     S=    64      33.28 ms (median of 30)
+  e2e_bfloat16     S=   128      32.12 ms (median of 30)
+  e2e_bfloat16     S=   256      32.32 ms (median of 30)
+  e2e_bfloat16     S=   512      46.46 ms (median of 30)
+  e2e_bfloat16     S=  1024      77.96 ms (median of 30)
+  e2e_bfloat16     S=  2048     148.03 ms (median of 30)
+  e2e_bfloat16     S=  4096     297.91 ms (median of 30)
+  e2e_bfloat16     S=  8192     612.45 ms (median of 30)
+  e2e_bfloat16     S= 16384    1308.53 ms (median of 30)
+  e2e_bfloat16     S= 32768    3009.54 ms (median of 30)
+
+=== speedup = re-prefill / transfer (median ms) ===
+ tokens   prefill   xfer fp32  speedup   xfer bf16  speedup FLOP ratio   e2e bf16  e2e x
+     64     67.44       23.67     2.8x        11.8     5.7x      19.4x      33.28  2.03x
+    128     58.42       30.02     1.9x       11.48     5.1x      19.4x      32.12  1.82x
+    256     71.14       41.91     1.7x       11.46     6.2x      19.5x      32.32  2.20x
+    512    111.83       61.58     1.8x       13.99     8.0x      19.5x      46.46  2.41x
+   1024    215.24      113.16     1.9x       19.95    10.8x      19.7x      77.96  2.76x
+   2048    426.42      229.47     1.9x       36.16    11.8x      20.0x     148.03  2.88x
+   4096     854.6      451.09     1.9x       70.48    12.1x      20.7x     297.91  2.87x
+   8192   1781.76      881.35     2.0x      141.69    12.6x      22.0x     612.45  2.91x
+  16384   3945.86     1748.82     2.3x      271.28    14.5x      24.7x    1308.53  3.02x
+  32768   9256.15     3616.59     2.6x      533.15    17.4x      30.0x    3009.54  3.08x
+
+paper (k=12, 8x H100, FA2): speedup 4.3-17.8x
+FLOP ratio = re-prefill FLOPs / mapper FLOPs: the speedup if both ran at the same efficiency.
+Measured below it means fixed overhead (Python dispatch, small kernels) dominates.
+Differences from the paper: one GPU (no cross-GPU transfer, which the paper includes); attention kernel sdpa; random-weight mapper (same arithmetic).
+
+saved -> /home/ubuntu/kv-transfer/results/qwen3_8b_to_32b/speedup_NVIDIA_H100_PCIe.json
+
+=== 2026-10-20 18:01:57 SPEEDUP_DONE ===
