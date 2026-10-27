@@ -1,0 +1,147 @@
+{
+  "source": "Qwen/Qwen3-4B",
+  "target": "Qwen/Qwen3-8B",
+  "mapper": "mapper_k8_lam0.01_allheads",
+  "n": 10042,
+  "counts": {
+    "both_right": 7008,
+    "both_wrong": 2339,
+    "lost": 517,
+    "gained": 178
+  },
+  "margin_median": {
+    "lost": 0.026302222772339623,
+    "kept": 0.16508792764429242
+  },
+  "loss_rate_by_margin_quartile": [
+    0.24614566719829878,
+    0.024455077086656035,
+    0.003721424774056353,
+    0.0005313496280552603
+  ],
+  "context_len_quartile_edges": [
+    39,
+    53,
+    63
+  ],
+  "loss_rate_by_context_quartile": [
+    0.09516214779372674,
+    0.05715935334872979,
+    0.060988433228180865,
+    0.06119402985074627
+  ],
+  "zero_copy_wrong": {
+    "lost": 0.7079303675048356,
+    "kept": 0.08233447488584475
+  },
+  "examples": [
+    {
+      "doc": 1502,
+      "context": "Playing rubik cube: A man is holding a rubiks cube. He then starts to turn it. He stops and looks it over. Eventually he",
+      "endings": [
+        "reaches a square and stops.",
+        "pulls out a half rubiks cube.",
+        "turns it back over.",
+        "solves it and shows his time."
+      ],
+      "label": 3,
+      "scores": {
+        "standalone": [
+          -0.9169,
+          -1.1904,
+          -1.1811,
+          -0.6743
+        ],
+        "mapper_k8_lam0.01_allheads": [
+          -0.7694,
+          -0.9142,
+          -0.6219,
+          -0.7079
+        ],
+        "zero_copy": [
+          -0.9453,
+          -0.9759,
+          -0.7437,
+          -0.5519
+        ]
+      },
+      "picked": {
+        "standalone": 3,
+        "mapper_k8_lam0.01_allheads": 2,
+        "zero_copy": 3
+      }
+    },
+    {
+      "doc": 1359,
+      "context": "Calf roping: A cowboy on a horse is released from a gate. He",
+      "endings": [
+        "uses a rope to tie the horse.",
+        "ropes a calf, then dismounts.",
+        "ropes a calf as people run by.",
+        "ropes a small horse and beats the shit out of it until it is loose."
+      ],
+      "label": 1,
+      "scores": {
+        "standalone": [
+          -0.8291,
+          -0.5842,
+          -0.9473,
+          -1.0046
+        ],
+        "mapper_k8_lam0.01_allheads": [
+          -0.4751,
+          -0.5288,
+          -1.0336,
+          -0.9015
+        ],
+        "zero_copy": [
+          -0.5548,
+          -0.6543,
+          -1.0564,
+          -0.9414
+        ]
+      },
+      "picked": {
+        "standalone": 1,
+        "mapper_k8_lam0.01_allheads": 0,
+        "zero_copy": 0
+      }
+    },
+    {
+      "doc": 2938,
+      "context": "Shot put: He spins, then throws the ball as far as he can. A woman and several others follow, doing the same. The winners",
+      "endings": [
+        "celebrate, holding up flags and hugging joyfully.",
+        "aim at the crowd, cheering for them.",
+        "then take their turn.",
+        "trot over to show the scores."
+      ],
+      "label": 0,
+      "scores": {
+        "standalone": [
+          -0.8059,
+          -1.0223,
+          -0.912,
+          -1.0846
+        ],
+        "mapper_k8_lam0.01_allheads": [
+          -0.8691,
+          -1.0351,
+          -0.7459,
+          -1.1815
+        ],
+        "zero_copy": [
+          -0.8108,
+          -0.9776,
+          -0.6942,
+          -1.2423
+        ]
+      },
+      "picked": {
+        "standalone": 0,
+        "mapper_k8_lam0.01_allheads": 2,
+        "zero_copy": 2
+      }
+    }
+  ]
+}

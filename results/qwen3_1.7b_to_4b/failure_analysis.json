@@ -1,0 +1,147 @@
+{
+  "source": "Qwen/Qwen3-1.7B",
+  "target": "Qwen/Qwen3-4B",
+  "mapper": "mapper_k8_lam0.01_allheads",
+  "n": 10042,
+  "counts": {
+    "both_right": 6050,
+    "both_wrong": 2861,
+    "lost": 829,
+    "gained": 302
+  },
+  "margin_median": {
+    "lost": 0.03772608365558072,
+    "kept": 0.16250835904915317
+  },
+  "loss_rate_by_margin_quartile": [
+    0.37267441860465117,
+    0.07795229784758581,
+    0.023255813953488372,
+    0.00813953488372093
+  ],
+  "context_len_quartile_edges": [
+    38,
+    53,
+    63
+  ],
+  "loss_rate_by_context_quartile": [
+    0.17110036275695284,
+    0.10971223021582734,
+    0.08963093145869948,
+    0.11351351351351352
+  ],
+  "zero_copy_wrong": {
+    "lost": 0.7515078407720145,
+    "kept": 0.7175206611570248
+  },
+  "examples": [
+    {
+      "doc": 829,
+      "context": "High jump: We see a man run and do a high jump 6'11 and see the replay. We then see the man jump at 6'9 and see the replay. The man",
+      "endings": [
+        "jumps at 6'11 again and we see the replay.",
+        "runs back and upwards at 6'6'9 but then lands and returns to his feet.",
+        "walks out of the helmet and we see his face again.",
+        "does his stroke over 6'4 \" and fades and we see the side screen again."
+      ],
+      "label": 0,
+      "scores": {
+        "standalone": [
+          -0.2925,
+          -1.0198,
+          -0.817,
+          -1.3406
+        ],
+        "mapper_k8_lam0.01_allheads": [
+          -0.8691,
+          -1.1613,
+          -0.6743,
+          -1.2805
+        ],
+        "zero_copy": [
+          -4.9882,
+          -4.0109,
+          -3.8277,
+          -3.6187
+        ]
+      },
+      "picked": {
+        "standalone": 0,
+        "mapper_k8_lam0.01_allheads": 2,
+        "zero_copy": 3
+      }
+    },
+    {
+      "doc": 595,
+      "context": "Surfing: A few surfers are out in the ocean surfing. A surfer in a wetsuit rides his surfboard on the waves. The waves",
+      "endings": [
+        "part as he passes an old buck.",
+        "push the surfer into the side of the water and away from him.",
+        "knock him off his surfboard.",
+        "are so strong and violent and he can't control himself as he falls for a while, doing tricks and pulling other surfers like a buoy."
+      ],
+      "label": 2,
+      "scores": {
+        "standalone": [
+          -1.6727,
+          -0.8893,
+          -0.5456,
+          -1.0589
+        ],
+        "mapper_k8_lam0.01_allheads": [
+          -1.4783,
+          -0.68,
+          -0.8466,
+          -0.8915
+        ],
+        "zero_copy": [
+          -3.2851,
+          -3.0588,
+          -3.6245,
+          -3.2247
+        ]
+      },
+      "picked": {
+        "standalone": 2,
+        "mapper_k8_lam0.01_allheads": 1,
+        "zero_copy": 1
+      }
+    },
+    {
+      "doc": 2021,
+      "context": "Baking cookies: A girl pours ingredients into a bowl together. She mixes the ingredients using a mixer then puts more ingredients in the bowl. The mixes",
+      "endings": [
+        "the ingredients together together one more time.",
+        "the ingredients together with a spoon into a bowl.",
+        "again and finally puts another small amount of ingredients in the bowl.",
+        "the ingredients up to form egg salad dressing."
+      ],
+      "label": 2,
+      "scores": {
+        "standalone": [
+          -0.5899,
+          -0.6115,
+          -0.3738,
+          -1.1317
+        ],
+        "mapper_k8_lam0.01_allheads": [
+          -0.5647,
+          -0.3914,
+          -0.5283,
+          -0.9595
+        ],
+        "zero_copy": [
+          -2.4096,
+          -2.577,
+          -2.6743,
+          -2.8243
+        ]
+      },
+      "picked": {
+        "standalone": 2,
+        "mapper_k8_lam0.01_allheads": 1,
+        "zero_copy": 0
+      }
+    }
+  ]
+}
