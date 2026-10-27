@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 
 import matplotlib
+import matplotlib.ticker
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -26,7 +27,8 @@ C_K8, C_K1, C_ZC = "#2a78d6", "#eb6834", "#1baf7a"
 C_REF, C_INK, C_MUTED, C_GRID = "#52514e", "#0b0b0b", "#898781", "#e1e0d9"
 
 # 0.6B -> 1.7B all-heads numbers come from the 2026-10-06 Modal runs (devlog); their
-# raw outputs were not copied into results/. Same-head numbers are REPORT3's.
+# eval outputs were not copied into results/. Same-head numbers are REPORT3's. The probe
+# grid was pulled from the kv-transfer-cache Modal volume.
 SMALL_PAIR = {
     "hellaswag": {"standalone": 0.6031, "oracle": 0.6031, "zero_copy": 0.3381,
                   "k1": 0.5384, "k8": 0.5563, "k1_samehead": 0.4899, "k8_samehead": 0.5369},
@@ -36,7 +38,7 @@ SMALL_PAIR = {
 
 PAIRS = [
     {"key": "0.6b_1.7b", "label": "0.6B → 1.7B", "change": "width", "Ls": 28, "Lt": 28,
-     "probe": None, "eval": None, "heldout": None},
+     "probe": "qwen3_0.6b_to_1.7b/probe_r2_n500.pt", "eval": None, "heldout": None},
     {"key": "1.7b_4b", "label": "1.7B → 4B", "change": "depth + width", "Ls": 28, "Lt": 36,
      "probe": "qwen3_1.7b_to_4b/probe_r2_n500.pt", "eval": "qwen3_1.7b_to_4b/eval_tasks.json",
      "heldout": "qwen3_1.7b_to_4b/heldout_r2.json"},
@@ -224,8 +226,8 @@ def fig_heldout(data):
             ax.scatter([x[j] + off], [r["held_k"]], s=36, color=col, zorder=3,
                        label=f"{kk.replace('k', 'k = ')} held-out" if j == 1 else None)
     ax.axhline(0.79, color=C_REF, linestyle="--", linewidth=1)
-    ax.text(0.5, 0.795, "paper, 14B → 32B, k = 8: 0.79 (protocol not stated)", fontsize=8, color=C_REF,
-            va="bottom", ha="center")
+    ax.text(0.99, 0.795, "paper, 14B → 32B, k = 8: 0.79 (protocol not stated)", fontsize=8, color=C_REF,
+            va="bottom", ha="right", transform=ax.get_yaxis_transform())
     ax.set_xticks(x, [d["label"] for d in data], fontsize=9)
     ax.set_ylim(0.5, 0.85)
     ax.set_ylabel("key R² (mean over layers, heads)", fontsize=9, color=C_REF)
@@ -234,8 +236,102 @@ def fig_heldout(data):
     save(fig, "fig5_heldout_r2.png")
 
 
+SPEEDUP = [  # (label, file, colour); all bf16 mapper, all-heads features
+    ("14B → 32B, H100", "speedup_h100/qwen3_14b_to_32b.json", C_K8),
+    ("8B → 32B, H100", "speedup_h100/qwen3_8b_to_32b.json", C_K1),
+    ("0.6B → 1.7B, L4", "speedup_0.6b_1.7b/l4_full_protocol.json", C_ZC),
+]
+# Paper Table 5, 14B -> 32B on 8x H100: tokens -> (transfer ms, re-prefill ms).
+PAPER_14B_32B = {64: (14.0, 61.7), 8192: (67.8, 1154.8), 32768: (277.6, 6975.3)}
+
+
+def fig_speedup():
+    runs = []
+    for label, f, c in SPEEDUP:
+        rows = [r for r in json.loads((RES / f).read_text())["rows"]
+                if r.get("transfer_bfloat16_ms") is not None]
+        runs.append((label, c, rows))
+    fig, (a, b) = plt.subplots(1, 2, figsize=(10, 3.6), gridspec_kw={"width_ratios": [1.15, 1]})
+
+    # Left: absolute latency on the paper's own pair.
+    rows = runs[0][2]
+    t = [r["tokens"] for r in rows]
+    for key, c, name in [("prefill_ms", C_INK, "32B re-prefill"),
+                         ("e2e_bfloat16_ms", C_K1, "14B prefill + transfer"),
+                         ("transfer_bfloat16_ms", C_K8, "transfer only")]:
+        y = [r[key] for r in rows]
+        a.plot(t, y, color=c, linewidth=2, marker="o", markersize=3.5)
+        a.annotate(name, (t[-1], y[-1]), xytext=(6, 0), textcoords="offset points",
+                   va="center", fontsize=8, color=C_INK)
+    pt = sorted(PAPER_14B_32B)
+    a.scatter(pt, [PAPER_14B_32B[s][1] for s in pt], s=40, facecolors="none",
+              edgecolors=C_INK, linewidths=1.3, zorder=3, label="open circles: paper (8× H100)")
+    a.scatter(pt, [PAPER_14B_32B[s][0] for s in pt], s=40, facecolors="none",
+              edgecolors=C_K8, linewidths=1.3, zorder=3)
+    a.set_xscale("log", base=2)
+    a.set_yscale("log")
+    a.set_xlim(48, 32768 * 9)
+    a.set_title("14B → 32B latency, one H100", fontsize=9.5, color=C_INK, loc="left")
+    a.set_ylabel("milliseconds (median of 30)", fontsize=8.5, color=C_REF)
+    a.legend(frameon=False, fontsize=7.5, loc="upper left")
+
+    # Right: speedup = re-prefill / transfer, every pair measured.
+    for label, c, rows in runs:
+        t = [r["tokens"] for r in rows]
+        y = [r["speedup_bfloat16"] for r in rows]
+        b.plot(t, y, color=c, linewidth=2, marker="o", markersize=3.5)
+        b.annotate(f"{label}  {y[-1]:.1f}×", (t[-1], y[-1]), xytext=(6, 0),
+                   textcoords="offset points", va="center", fontsize=8, color=C_INK)
+    b.scatter(pt, [PAPER_14B_32B[s][1] / PAPER_14B_32B[s][0] for s in pt], s=40,
+              facecolors="none", edgecolors=C_K8, linewidths=1.3, zorder=3,
+              label="open circles: paper, 14B → 32B")
+    b.axhline(1, color=C_MUTED, linestyle="--", linewidth=1)
+    b.set_xscale("log", base=2)
+    b.set_xlim(48, 32768 * 12)
+    b.set_ylim(0, 27)
+    b.set_title("Speedup over re-prefill", fontsize=9.5, color=C_INK, loc="left")
+    b.set_ylabel("re-prefill ÷ transfer", fontsize=8.5, color=C_REF)
+    b.legend(frameon=False, fontsize=7.5, loc="upper left")
+
+    for ax in (a, b):
+        style(ax)
+        ax.set_xlabel("prompt length (tokens)", fontsize=8.5, color=C_REF)
+        ticks = [64, 256, 1024, 4096, 16384, 32768]
+        ax.set_xticks(ticks, ["64", "256", "1K", "4K", "16K", "32K"])
+        ax.xaxis.set_minor_locator(matplotlib.ticker.NullLocator())
+    fig.suptitle("Mapping a cache vs re-reading the prompt", x=0.06, ha="left",
+                 fontsize=11, color=C_INK, y=1.02)
+    fig.tight_layout()
+    save(fig, "fig6_speedup.png")
+
+
+def fig_lineage():
+    """14B -> 32B: activation probe next to raw-weight similarity, same layer grid."""
+    w = json.loads((RES / "qwen3_14b_to_32b/kproj_cos.json").read_text())
+    pr = torch.load(RES / "qwen3_14b_to_32b/probe_r2_n500.pt", weights_only=False)
+    panels = [(pr["r2"]["k_content"].float().mean(-1).numpy(), "Key R² from the probe (activations)",
+               "R²", 0.8),
+              (np.array(w["cos"]), "Cosine of k_proj weights (no data involved)", "cosine", 0.9)]
+    fig, axes = plt.subplots(1, 2, figsize=(9, 3.4))
+    for ax, (g, title, cl, vmax) in zip(axes, panels):
+        im = ax.imshow(g, origin="lower", cmap="Blues", vmin=0, vmax=vmax, aspect="auto")
+        ax.set_title(title, fontsize=9.5, color=C_INK, loc="left")
+        ax.set_xlabel("32B layer", fontsize=8.5, color=C_REF)
+        ax.tick_params(labelsize=8, colors=C_REF)
+        cb = fig.colorbar(im, ax=ax, fraction=0.04, pad=0.02)
+        cb.set_label(cl, fontsize=8, color=C_REF)
+        cb.ax.tick_params(labelsize=8, colors=C_REF)
+    axes[0].set_ylabel("14B layer", fontsize=8.5, color=C_REF)
+    fig.suptitle("Qwen3-32B's layers line up with copies of Qwen3-14B's: 0–31, then 8–39",
+                 x=0.06, ha="left", fontsize=11, color=C_INK, y=1.03)
+    fig.tight_layout()
+    save(fig, "fig7_lineage.png")
+
+
 def main():
     data = [load_pair(p) for p in PAIRS]
+    fig_speedup()
+    fig_lineage()
     fig_retention(data)
     fig_alignment(data)
     fig_heatmaps(data)

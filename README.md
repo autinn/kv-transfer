@@ -38,14 +38,50 @@ What the four pairs say so far:
    the proportional stretch a naive alignment assumes.
 4. **Qwen3-4B and 8B caches are nearly interchangeable unmapped** (92% zero-copy).
 
+![HellaSwag retention for the four pairs](results/plots/writeup/fig1_retention.png)
+
+### Speedup: transfer vs re-prefill
+
+Time for the target to get a usable cache: map the source's cache (bf16, k layers,
+all-heads) vs prefill the prompt itself. Paper protocol: 64 to 32K tokens, 50 warmup and
+30 timed runs, median reported (`scripts/10_speedup.py`).
+
+| Pair | GPU | 64 tokens | 1K | 8K | 32K | Paper |
+|---|---|---:|---:|---:|---:|---|
+| 14B → 32B, k = 8 | H100 PCIe | 5.6× | 13.1× | 15.7× | **21.8×** | 4.4× / 17× (8K) / 25.1× |
+| 8B → 32B, k = 12 | H100 PCIe | 5.7× | 10.8× | 12.6× | **17.4×** | 4.3–17.8× |
+| 0.6B → 1.7B, k = 8 | L4 | 2.6× | 2.3× | 2.7× | out of memory | not reported |
+
+On 14B → 32B the 32B re-prefill takes 67 ms at 64 tokens and 9.3 s at 32K; the transfer
+takes 12 ms and 425 ms.
+
+- **The speedup assumes the source cache already exists**, e.g. the small model has
+  already read the prompt. Counting the 14B's own prefill, end to end is about 2×
+  (1.9–2.1× on 14B → 32B, 2.0–3.1× on 8B → 32B, about 1× on 0.6B → 1.7B).
+- **Setup differences from the paper:** one GPU, so there is no cross-GPU copy (the paper
+  includes one); PyTorch SDPA attention rather than FlashAttention-2; an H100 PCIe rather
+  than SXM; a mapper with random weights, which costs exactly what a fitted one does.
+
+![Latency and speedup vs prompt length](results/plots/writeup/fig6_speedup.png)
+
 Sanity checks that gate every number: mapping a model onto itself reproduces its logits
 (max error 2.9e−05); the oracle graft (target's own cache through the same graft path)
 matches standalone within ±0.08 points; RoPE handling is checked against Hugging Face's.
 
 ### Figures
 
-Generated from the saved results by `python scripts/09_writeup_figures.py` into
-`results/plots/writeup/`.
+All in `results/plots/writeup/`, rebuilt from the committed results by
+`python scripts/09_writeup_figures.py` (no GPU, about a minute).
+
+| Figure | What it shows |
+|---|---|
+| `fig1_retention.png` | HellaSwag retention per pair: zero-copy, k = 1, k = 8 |
+| `fig2_alignment.png` | Best source layer for each target layer, against a proportional stretch |
+| `fig3_probe_heatmaps.png` | Single-layer key R² for every (source layer, target layer), four pairs |
+| `fig4_heads.png` | Same-head vs all-heads features (the pairs where both were run) |
+| `fig5_heldout_r2.png` | Mapper fit in-sample vs on held-out text |
+| `fig6_speedup.png` | Transfer vs re-prefill latency and speedup, with the paper's points |
+| `fig7_lineage.png` | 14B → 32B: probe R² next to the cosine of the raw `k_proj` weights |
 
 ---
 
@@ -56,11 +92,13 @@ expected format by a **per-head ridge regression fitted in closed form**, lettin
 large model skip prefill entirely. The paper reports 73–98% accuracy retention at
 2.7–25× speedup.
 
-Every pair in the paper is ≥3B parameters. The question this repo asks: **does the
-effect survive at sub-2B scale**, where two models have had far less opportunity to
-converge on similar internal representations?
+Two questions:
 
-A negative answer is a real result. Nothing below 3B has been reported.
+1. **Does it replicate?** On the paper's own 14B → 32B pair: 97.8% HellaSwag retention
+   (paper 97.6%) and 5–22× speedup (paper 4.4–25×).
+2. **Does it hold below 3B, where the paper has no pairs?** Yes: 92% on 0.6B → 1.7B and
+   1.7B → 4B. The smaller pairs also separate depth mismatch from width mismatch,
+   which the paper's pairs do not.
 
 ---
 
@@ -98,19 +136,19 @@ is a single Cholesky on a cached Gram.
 
 ---
 
-## Why this model pair
+## Why these pairs
 
 The method needs a **matched-KV** pair: same KV head count, same per-head dimension,
-dense full attention, shared tokenizer.
+dense full attention, shared tokenizer. Every Qwen3 dense model has 8 KV heads of
+dimension 128, RoPE θ = 1e6 and the same tokenizer, so any two of them qualify.
 
-| | Qwen3-0.6B | Qwen3-1.7B |
-|---|---|---|
-| layers | 28 | 28 |
-| KV heads | 8 | 8 |
-| head_dim | 128 | 128 |
-| hidden | 1024 | 2048 |
-| rope_theta | 1e6 | 1e6 |
-| tokenizer | Qwen2Tokenizer | identical |
+| Pair | Layers | Hidden size | What changes |
+|---|---|---|---|
+| 0.6B → 1.7B | 28 → 28 | 1024 → 2048 | width only |
+| 1.7B → 4B | 28 → 36 | 2048 → 2560 | depth and width |
+| 4B → 8B | 36 → 36 | 2560 → 4096 | width only |
+| 14B → 32B | 40 → 64 | 5120 → 5120 | depth only (the paper's pair) |
+| 8B → 32B | 36 → 64 | 4096 → 5120 | speedup only (the paper's Table 16 pair) |
 
 The shared tokenizer is a requirement, not a convenience: the regression pairs KV
 vectors *token by token*, so both models must see identical token streams.
@@ -141,6 +179,7 @@ src/kvtransfer/
   stream.py         Gram accumulators for the top-k fit
   kvstore.py        capture KV once to disk shards; every later pass reads them
   runtime.py        model loading (device_map for big models), config helpers
+  bench.py          latency timing, synthetic caches, FLOP counts for the speedup study
   pipeline.py       config → calibration ids → source/target stores
   eval/ppl.py       prefix-conditioned perplexity + oracle path
   eval/harness.py   benchmark scoring from a transferred prefix cache
@@ -152,7 +191,13 @@ scripts/
   04_report_probe.py   turn a probe .pt into tables + heatmaps
   05_eval.py           perplexity vs all four baselines
   07_eval_tasks.py     benchmark retention (the paper's headline metric)
+  08_paired_test.py    paired significance test between two configs
+  09_writeup_figures.py  every figure in results/plots/writeup/ from saved results
+  10_speedup.py        transfer vs re-prefill latency
+  11_weight_similarity.py  k_proj weight cosine between two models (fig7)
   run_all.sh           the whole pipeline end to end (CONFIG=... for other pairs)
+  run_pair.sh          one pair on a rented GPU: probe, fit k = 1 and 8, benchmarks
+  run_speedup_pod.sh   the H100 speedup runs; refuses to start on a busy GPU
 
 tests/
   test_rope.py         RoPE vs HF's own implementation
@@ -162,6 +207,9 @@ tests/
   test_kvstore.py      store == direct capture; reuse, resume, invalidation
   test_unequal_depth.py  2-layer → 3-layer pair: alignment, zero-copy, validation
   test_harness.py      transferred-cache scoring == standalone scoring
+  test_all_heads.py    all-heads mapper == per-head reference
+  test_heldout.py      held-out R² evaluation
+  test_bench.py        timing helpers and FLOP counts
   test_scripts_pipeline.py  every script end to end on a tiny unequal pair (`slow`)
 ```
 
@@ -212,7 +260,8 @@ uv pip install -e ".[dev]"
 source .env.sh            # HF_HUB_DISABLE_XET=1 — see "Notes" below
 ```
 
-Requires ~5 GB of disk for the two models and ~6 GB of free RAM.
+The 0.6B → 1.7B pair needs ~5 GB of disk and ~6 GB of free RAM. The larger pairs need
+an 80 GB GPU and over 120 GB of disk; see [GPU.md](GPU.md).
 
 ## Running
 
@@ -228,7 +277,7 @@ CONFIG=configs/qwen3_14b_to_32b.yaml bash scripts/run_all.sh   # paper's pair, 8
 Or step by step:
 
 ```bash
-pytest tests/ -q -m "not slow"     # 73 fast tests, no downloads
+pytest tests/ -q -m "not slow"     # 78 fast tests, no downloads
 pytest tests/ -q -m slow           # guardrails on real 0.6B + tiny-pair script run
 
 C=configs/qwen3_0.6b_to_1.7b.yaml
@@ -245,11 +294,6 @@ best pair (the direct check against its published numbers). `smoke_0.6b_to_1.7b.
 runs every stage on the real small pair at laptop scale; `selftest_0.6b.yaml` runs it
 0.6B → 0.6B.
 
-> **Mappers fitted before this change with k ≥ 2 should be refit.** Keys and values are
-> ranked separately in top-k selection and often pick different source layers, but the
-> saved mapper recorded only the key selection, so value maps were applied to the wrong
-> source layers at eval time. Loading such a mapper now warns.
-
 ### Feature width: same-head vs. all-heads
 
 By default each target head is mapped from the *same-numbered* source head only
@@ -260,7 +304,7 @@ counts. Pass `--all-heads` to `03_fit.py` to fit that wider mapper (`stream.TopK
 and `mapper.KVMapper` both take `all_heads=True`); it is not the default because it
 costs more Gram memory. All results in the table above use all-heads features.
 
-### Expected runtime
+### Expected runtime (0.6B → 1.7B)
 
 | Hardware | 500 sequences | 100 sequences |
 |---|---|---|
@@ -302,7 +346,7 @@ real 0.6B → 1.7B pair at toy size. The numbers are not results; the check is t
 pipeline runs and the graft path is exact.
 
 ```bash
-pytest tests/ -q -m "not slow"                       # expect: 73 passed
+pytest tests/ -q -m "not slow"                       # expect: 78 passed
 CONFIG=configs/smoke_0.6b_to_1.7b.yaml N_SEQS=16 DEVICE=cpu bash scripts/run_all.sh   # or DEVICE=mps / cuda
 ```
 
@@ -331,6 +375,29 @@ plus `heldout_r2.json` (k = 8 key R² ≈ 0.75 and 0.71) and `probe_report_n500.
 (k = 8 all-heads acc_norm 0.8093). The committed `results/` directories hold the outputs
 of these runs; fitted mappers (2.3 GB each) are not committed.
 
+**3. Speedup.** Either on Modal (L4, 0.6B → 1.7B):
+
+```bash
+modal deploy modal_run.py
+modal run modal_run.py::spawn_speedup --quick    # ~5 min: does it run?
+modal run modal_run.py::spawn_speedup            # full protocol, within the 90 min timeout
+```
+
+or on one 80 GB GPU that nothing else is using (14B → 32B, then 8B → 32B):
+
+```bash
+bash scripts/run_speedup_pod.sh                  # ~1 h 40 min on an H100 PCIe, 25 min of it downloads
+```
+
+Expected: `results/speedup_h100/*.json`, matching the speedup table above to within
+a few percent (timings vary by GPU and driver).
+
+**4. Figures**, from the committed results, no GPU:
+
+```bash
+python scripts/09_writeup_figures.py
+```
+
 ---
 
 ## Status
@@ -340,5 +407,7 @@ of these runs; fitted mappers (2.3 GB each) are not committed.
 | Pipeline: capture → probe → fit → eval | **done**, guardrails green |
 | Paper's 14B → 32B replication | **done**: 97.8% HellaSwag retention at k = 8 |
 | Family matrix (four pairs) | **done** |
-| Other benchmarks, length generalisation, mapper anatomy | next |
+| Speedup, 14B → 32B and 8B → 32B | **done**: 5.0–21.8× and 5.7–17.4× |
+| Other benchmarks on 14B → 32B (ARC-C, WinoGrande), k = 1 on 14B → 32B | next |
+| CoQA model switching, calibration-domain ablation, ARC-Easy / PIQA / BoolQ | cut |
 | Write-up | in progress |
