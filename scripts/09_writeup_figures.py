@@ -236,9 +236,10 @@ def fig_heldout(data):
     save(fig, "fig5_heldout_r2.png")
 
 
+# Only pairs with a fitted, evaluated mapper. 8B -> 32B was timed (the paper's Table 16)
+# but never fitted or scored, so it stays out of the figure.
 SPEEDUP = [  # (label, file, colour); all bf16 mapper, all-heads features
     ("14B → 32B, H100", "speedup_h100/qwen3_14b_to_32b.json", C_K8),
-    ("8B → 32B, H100", "speedup_h100/qwen3_8b_to_32b.json", C_K1),
     ("0.6B → 1.7B, L4", "speedup_0.6b_1.7b/l4_full_protocol.json", C_ZC),
 ]
 # Paper Table 5, 14B -> 32B on 8x H100: tokens -> (transfer ms, re-prefill ms).
