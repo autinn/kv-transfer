@@ -6,7 +6,7 @@
 #
 # What's cut vs. qwen3_14b_to_32b.yaml, and why:
 #   - fit.lambdas: just the paper's 0.01, not the 3-way sweep. If it underperforms and
-#     you want to test the lambda-scaling hypothesis (README/NEXT_STEPS.md), that's a
+#     you want to test the lambda-scaling hypothesis, that's a
 #     deliberate follow-up, not part of this run.
 #   - fit run with --k 8 only (paper's reported setting for this pair) instead of
 #     sweeping k_sweep here -- keep k_sweep as a record of what the full config would

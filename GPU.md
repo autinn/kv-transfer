@@ -1,7 +1,7 @@
 # GPU Box Setup — Extra Steps
 
 Setup commands that were needed on the validation GPU box but are not in the standard
-setup instructions (README.md "Setup", NEXT_STEPS.md §2).
+setup instructions (README.md "Setup").
 
 Box: NVIDIA A10 (23 GB), driver 570.148.08 (CUDA 12.8), Ubuntu, system Python 3.10,
 1.4 TB disk, 222 GB RAM.
@@ -125,7 +125,7 @@ sed -i 's/eye = torch.eye(D, dtype=f64)$/eye = torch.eye(D, dtype=f64, device=cx
 ## 5. H100 (80 GB): Qwen3-14B -> 32B
 
 Validated 2026-09-28 on an H100 PCIe with the same driver (570.148.08, CUDA 12.8), so
-steps 1-2 above apply as written. See REPORT4.md.
+steps 1-2 above apply as written.
 
 - `configs/qwen3_14b_to_32b_replication.yaml` runs unchanged: batch 4, chunk 25, GPU
   Grams, `max_gram_gb: 40`.

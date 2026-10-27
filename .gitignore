@@ -14,3 +14,13 @@ results/*/mappers/
 results/*/*.partial.json
 .DS_Store
 VIDEO_PLAN.md
+
+# internal working notes and run logs: kept locally, not published
+REPORT*.md
+VIS.md
+NEXT_STEPS.md
+logs/
+results/family_matrix_pod/
+results/*/logs/
+results/*/pod/
+results/plots/*.png

@@ -1,392 +1,0 @@
-=== EVAL (batched) Mon Sep 28 09:44:07 UTC 2026
-Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
-hellaswag: 10042 docs, 10019 unique contexts, 494515 context tokens (13s)
-2 round(s), <= 366210 prefix tokens (~60 GB of source KV) each
-
-=== round 1/2: hellaswag[0..7977] ===
-  capturing Qwen/Qwen3-14B -> /home/ubuntu/kv-transfer/results/kv/Qwen__Qwen3-14B/task_hellaswag_10042_0-7977: 320/320 shards, ~60.0 GB
-loading Qwen/Qwen3-14B (bfloat16, cuda) ...
-Loading weights:   0%|          | 0/443 [00:00<?, ?it/s]Loading weights:   0%|          | 1/443 [00:00<01:55,  3.83it/s]Loading weights:   0%|          | 2/443 [00:00<02:07,  3.45it/s]Loading weights:   2%|▏         | 10/443 [00:00<00:21, 20.06it/s]Loading weights:   4%|▎         | 16/443 [00:00<00:14, 29.51it/s]Loading weights:   6%|▌         | 27/443 [00:00<00:09, 45.41it/s]Loading weights:   8%|▊         | 37/443 [00:01<00:07, 54.59it/s]Loading weights:  10%|▉         | 44/443 [00:01<00:07, 54.77it/s]Loading weights:  12%|█▏        | 51/443 [00:01<00:08, 48.25it/s]Loading weights:  14%|█▎        | 60/443 [00:01<00:07, 52.39it/s]Loading weights:  16%|█▌        | 70/443 [00:01<00:06, 56.94it/s]Loading weights:  17%|█▋        | 76/443 [00:01<00:06, 54.28it/s]Loading weights:  19%|█▊        | 82/443 [00:01<00:06, 52.08it/s]Loading weights:  21%|██        | 92/443 [00:02<00:06, 56.75it/s]Loading weights:  22%|██▏       | 98/443 [00:02<00:06, 54.18it/s]Loading weights:  23%|██▎       | 104/443 [00:02<00:07, 47.54it/s]Loading weights:  26%|██▌       | 115/443 [00:02<00:05, 55.30it/s]Loading weights:  28%|██▊       | 125/443 [00:02<00:05, 59.14it/s]Loading weights:  30%|██▉       | 131/443 [00:02<00:05, 55.52it/s]Loading weights:  31%|███       | 137/443 [00:02<00:05, 52.99it/s]Loading weights:  33%|███▎      | 146/443 [00:03<00:06, 46.97it/s]Loading weights:  36%|███▌      | 158/443 [00:03<00:04, 57.20it/s]Loading weights:  38%|███▊      | 170/443 [00:03<00:04, 58.71it/s]Loading weights:  41%|████      | 180/443 [00:03<00:04, 64.16it/s]Loading weights:  43%|████▎     | 191/443 [00:03<00:03, 68.33it/s]Loading weights:  45%|████▍     | 199/443 [00:03<00:03, 67.58it/s]Loading weights:  47%|████▋     | 206/443 [00:04<00:03, 62.65it/s]Loading weights:  48%|████▊     | 214/443 [00:04<00:03, 60.86it/s]Loading weights:  51%|█████     | 224/443 [00:04<00:03, 62.59it/s]Loading weights:  53%|█████▎    | 235/443 [00:04<00:04, 50.96it/s]Loading weights:  58%|█████▊    | 257/443 [00:04<00:02, 75.77it/s]Loading weights:  60%|██████    | 266/443 [00:04<00:02, 75.10it/s]Loading weights:  62%|██████▏   | 275/443 [00:05<00:02, 69.93it/s]Loading weights:  64%|██████▍   | 283/443 [00:05<00:02, 66.98it/s]Loading weights:  66%|██████▌   | 291/443 [00:05<00:02, 67.27it/s]Loading weights:  68%|██████▊   | 301/443 [00:05<00:02, 67.41it/s]Loading weights:  70%|██████▉   | 308/443 [00:05<00:01, 67.84it/s]Loading weights:  71%|███████   | 315/443 [00:05<00:02, 61.16it/s]Loading weights:  73%|███████▎  | 324/443 [00:05<00:01, 62.76it/s]Loading weights:  75%|███████▌  | 334/443 [00:05<00:01, 64.75it/s]Loading weights:  77%|███████▋  | 341/443 [00:06<00:01, 61.73it/s]Loading weights:  79%|███████▊  | 348/443 [00:06<00:01, 53.02it/s]Loading weights:  81%|████████  | 357/443 [00:06<00:01, 55.15it/s]Loading weights:  83%|████████▎ | 367/443 [00:06<00:01, 58.46it/s]Loading weights:  84%|████████▍ | 373/443 [00:06<00:01, 55.17it/s]Loading weights:  86%|████████▌ | 379/443 [00:06<00:01, 52.76it/s]Loading weights:  88%|████████▊ | 389/443 [00:07<00:01, 51.16it/s]Loading weights:  90%|█████████ | 400/443 [00:07<00:00, 57.71it/s]Loading weights:  92%|█████████▏| 406/443 [00:07<00:00, 55.50it/s]Loading weights:  93%|█████████▎| 412/443 [00:07<00:00, 54.70it/s]Loading weights:  95%|█████████▌| 422/443 [00:07<00:00, 58.35it/s]Loading weights:  97%|█████████▋| 428/443 [00:07<00:00, 54.95it/s]Loading weights:  98%|█████████▊| 434/443 [00:07<00:00, 52.43it/s]Loading weights: 100%|██████████| 443/443 [00:07<00:00, 55.91it/s]
-    shard 1/320  0.2m elapsed, ~68m left
-    shard 2/320  0.3m elapsed, ~47m left
-    shard 3/320  0.3m elapsed, ~34m left
-    shard 4/320  0.4m elapsed, ~29m left
-    shard 5/320  0.4m elapsed, ~25m left
-    shard 6/320  0.4m elapsed, ~23m left
-    shard 7/320  0.5m elapsed, ~21m left
-    shard 8/320  0.5m elapsed, ~21m left
-    shard 9/320  0.6m elapsed, ~19m left
-    shard 10/320  0.6m elapsed, ~18m left
-    shard 11/320  0.6m elapsed, ~17m left
-    shard 12/320  0.6m elapsed, ~16m left
-    shard 13/320  0.7m elapsed, ~16m left
-    shard 14/320  0.7m elapsed, ~15m left
-    shard 15/320  0.7m elapsed, ~14m left
-    shard 16/320  0.7m elapsed, ~14m left
-    shard 17/320  0.8m elapsed, ~13m left
-    shard 18/320  0.8m elapsed, ~13m left
-    shard 19/320  0.8m elapsed, ~13m left
-    shard 20/320  0.8m elapsed, ~13m left
-    shard 21/320  0.9m elapsed, ~12m left
-    shard 22/320  0.9m elapsed, ~12m left
-    shard 23/320  0.9m elapsed, ~12m left
-    shard 24/320  0.9m elapsed, ~12m left
-    shard 25/320  1.0m elapsed, ~11m left
-    shard 26/320  1.0m elapsed, ~11m left
-    shard 27/320  1.0m elapsed, ~11m left
-    shard 28/320  1.0m elapsed, ~11m left
-    shard 29/320  1.1m elapsed, ~11m left
-    shard 30/320  1.1m elapsed, ~11m left
-    shard 31/320  1.1m elapsed, ~10m left
-    shard 32/320  1.1m elapsed, ~10m left
-    shard 33/320  1.1m elapsed, ~10m left
-    shard 34/320  1.2m elapsed, ~10m left
-    shard 35/320  1.2m elapsed, ~10m left
-    shard 36/320  1.2m elapsed, ~9m left
-    shard 37/320  1.2m elapsed, ~9m left
-    shard 38/320  1.2m elapsed, ~9m left
-    shard 39/320  1.3m elapsed, ~9m left
-    shard 40/320  1.3m elapsed, ~9m left
-    shard 41/320  1.3m elapsed, ~9m left
-    shard 42/320  1.4m elapsed, ~9m left
-    shard 43/320  1.4m elapsed, ~9m left
-    shard 44/320  1.4m elapsed, ~9m left
-    shard 45/320  1.4m elapsed, ~9m left
-    shard 46/320  1.5m elapsed, ~9m left
-    shard 47/320  1.5m elapsed, ~9m left
-    shard 48/320  1.5m elapsed, ~9m left
-    shard 49/320  1.5m elapsed, ~9m left
-    shard 50/320  1.6m elapsed, ~8m left
-    shard 51/320  1.6m elapsed, ~8m left
-    shard 52/320  1.6m elapsed, ~8m left
-    shard 53/320  1.7m elapsed, ~8m left
-    shard 54/320  1.7m elapsed, ~8m left
-    shard 55/320  1.7m elapsed, ~8m left
-    shard 56/320  1.7m elapsed, ~8m left
-    shard 57/320  1.8m elapsed, ~8m left
-    shard 58/320  1.8m elapsed, ~8m left
-    shard 59/320  1.8m elapsed, ~8m left
-    shard 60/320  1.9m elapsed, ~8m left
-    shard 61/320  1.9m elapsed, ~8m left
-    shard 62/320  1.9m elapsed, ~8m left
-    shard 63/320  2.0m elapsed, ~8m left
-    shard 64/320  2.0m elapsed, ~8m left
-    shard 65/320  2.0m elapsed, ~8m left
-    shard 66/320  2.0m elapsed, ~8m left
-    shard 67/320  2.1m elapsed, ~8m left
-    shard 68/320  2.1m elapsed, ~8m left
-    shard 69/320  2.1m elapsed, ~8m left
-    shard 70/320  2.1m elapsed, ~8m left
-    shard 71/320  2.2m elapsed, ~8m left
-    shard 72/320  2.2m elapsed, ~8m left
-    shard 73/320  2.2m elapsed, ~7m left
-    shard 74/320  2.2m elapsed, ~7m left
-    shard 75/320  2.3m elapsed, ~7m left
-    shard 76/320  2.3m elapsed, ~7m left
-    shard 77/320  2.3m elapsed, ~7m left
-    shard 78/320  2.3m elapsed, ~7m left
-    shard 79/320  2.3m elapsed, ~7m left
-    shard 80/320  2.4m elapsed, ~7m left
-    shard 81/320  2.4m elapsed, ~7m left
-    shard 82/320  2.4m elapsed, ~7m left
-    shard 83/320  2.4m elapsed, ~7m left
-    shard 84/320  2.5m elapsed, ~7m left
-    shard 85/320  2.5m elapsed, ~7m left
-    shard 86/320  2.5m elapsed, ~7m left
-    shard 87/320  2.5m elapsed, ~7m left
-    shard 88/320  2.5m elapsed, ~7m left
-    shard 89/320  2.6m elapsed, ~7m left
-    shard 90/320  2.6m elapsed, ~7m left
-    shard 91/320  2.6m elapsed, ~7m left
-    shard 92/320  2.6m elapsed, ~7m left
-    shard 93/320  2.7m elapsed, ~7m left
-    shard 94/320  2.7m elapsed, ~6m left
-    shard 95/320  2.7m elapsed, ~6m left
-    shard 96/320  2.7m elapsed, ~6m left
-    shard 97/320  2.7m elapsed, ~6m left
-    shard 98/320  2.8m elapsed, ~6m left
-    shard 99/320  2.8m elapsed, ~6m left
-    shard 100/320  2.8m elapsed, ~6m left
-    shard 101/320  2.8m elapsed, ~6m left
-    shard 102/320  2.9m elapsed, ~6m left
-    shard 103/320  2.9m elapsed, ~6m left
-    shard 104/320  2.9m elapsed, ~6m left
-    shard 105/320  2.9m elapsed, ~6m left
-    shard 106/320  3.0m elapsed, ~6m left
-    shard 107/320  3.0m elapsed, ~6m left
-    shard 108/320  3.0m elapsed, ~6m left
-    shard 109/320  3.0m elapsed, ~6m left
-    shard 110/320  3.1m elapsed, ~6m left
-    shard 111/320  3.1m elapsed, ~6m left
-    shard 112/320  3.1m elapsed, ~6m left
-    shard 113/320  3.1m elapsed, ~6m left
-    shard 114/320  3.2m elapsed, ~6m left
-    shard 115/320  3.2m elapsed, ~6m left
-    shard 116/320  3.2m elapsed, ~6m left
-    shard 117/320  3.3m elapsed, ~6m left
-    shard 118/320  3.3m elapsed, ~6m left
-    shard 119/320  3.3m elapsed, ~6m left
-    shard 120/320  3.3m elapsed, ~6m left
-    shard 121/320  3.4m elapsed, ~6m left
-    shard 122/320  3.4m elapsed, ~6m left
-    shard 123/320  3.4m elapsed, ~5m left
-    shard 124/320  3.4m elapsed, ~5m left
-    shard 125/320  3.5m elapsed, ~5m left
-    shard 126/320  3.5m elapsed, ~5m left
-    shard 127/320  3.5m elapsed, ~5m left
-    shard 128/320  3.6m elapsed, ~5m left
-    shard 129/320  3.6m elapsed, ~5m left
-    shard 130/320  3.6m elapsed, ~5m left
-    shard 131/320  3.7m elapsed, ~5m left
-    shard 132/320  3.8m elapsed, ~5m left
-    shard 133/320  3.8m elapsed, ~5m left
-    shard 134/320  3.9m elapsed, ~5m left
-    shard 135/320  3.9m elapsed, ~5m left
-    shard 136/320  3.9m elapsed, ~5m left
-    shard 137/320  4.0m elapsed, ~5m left
-    shard 138/320  4.0m elapsed, ~5m left
-    shard 139/320  4.0m elapsed, ~5m left
-    shard 140/320  4.1m elapsed, ~5m left
-    shard 141/320  4.1m elapsed, ~5m left
-    shard 142/320  4.2m elapsed, ~5m left
-    shard 143/320  4.2m elapsed, ~5m left
-    shard 144/320  4.2m elapsed, ~5m left
-    shard 145/320  4.3m elapsed, ~5m left
-    shard 146/320  4.3m elapsed, ~5m left
-    shard 147/320  4.3m elapsed, ~5m left
-    shard 148/320  4.3m elapsed, ~5m left
-    shard 149/320  4.4m elapsed, ~5m left
-    shard 150/320  4.4m elapsed, ~5m left
-    shard 151/320  4.4m elapsed, ~5m left
-    shard 152/320  4.4m elapsed, ~5m left
-    shard 153/320  4.5m elapsed, ~5m left
-    shard 154/320  4.5m elapsed, ~5m left
-    shard 155/320  4.5m elapsed, ~5m left
-    shard 156/320  4.6m elapsed, ~5m left
-    shard 157/320  4.6m elapsed, ~5m left
-    shard 158/320  4.6m elapsed, ~5m left
-    shard 159/320  4.6m elapsed, ~5m left
-    shard 160/320  4.7m elapsed, ~5m left
-    shard 161/320  4.7m elapsed, ~5m left
-    shard 162/320  4.7m elapsed, ~5m left
-    shard 163/320  4.8m elapsed, ~5m left
-    shard 164/320  4.8m elapsed, ~5m left
-    shard 165/320  4.8m elapsed, ~5m left
-    shard 166/320  4.9m elapsed, ~5m left
-    shard 167/320  4.9m elapsed, ~4m left
-    shard 168/320  4.9m elapsed, ~4m left
-    shard 169/320  4.9m elapsed, ~4m left
-    shard 170/320  5.0m elapsed, ~4m left
-    shard 171/320  5.0m elapsed, ~4m left
-    shard 172/320  5.0m elapsed, ~4m left
-    shard 173/320  5.0m elapsed, ~4m left
-    shard 174/320  5.1m elapsed, ~4m left
-    shard 175/320  5.1m elapsed, ~4m left
-    shard 176/320  5.1m elapsed, ~4m left
-    shard 177/320  5.1m elapsed, ~4m left
-    shard 178/320  5.2m elapsed, ~4m left
-    shard 179/320  5.2m elapsed, ~4m left
-    shard 180/320  5.2m elapsed, ~4m left
-    shard 181/320  5.2m elapsed, ~4m left
-    shard 182/320  5.3m elapsed, ~4m left
-    shard 183/320  5.3m elapsed, ~4m left
-    shard 184/320  5.3m elapsed, ~4m left
-    shard 185/320  5.3m elapsed, ~4m left
-    shard 186/320  5.4m elapsed, ~4m left
-    shard 187/320  5.4m elapsed, ~4m left
-    shard 188/320  5.5m elapsed, ~4m left
-    shard 189/320  5.5m elapsed, ~4m left
-    shard 190/320  5.5m elapsed, ~4m left
-    shard 191/320  5.5m elapsed, ~4m left
-    shard 192/320  5.5m elapsed, ~4m left
-    shard 193/320  5.6m elapsed, ~4m left
-    shard 194/320  5.6m elapsed, ~4m left
-    shard 195/320  5.6m elapsed, ~4m left
-    shard 196/320  5.6m elapsed, ~4m left
-    shard 197/320  5.7m elapsed, ~4m left
-    shard 198/320  5.7m elapsed, ~4m left
-    shard 199/320  5.7m elapsed, ~3m left
-    shard 200/320  5.7m elapsed, ~3m left
-    shard 201/320  5.8m elapsed, ~3m left
-    shard 202/320  5.8m elapsed, ~3m left
-    shard 203/320  5.8m elapsed, ~3m left
-    shard 204/320  5.8m elapsed, ~3m left
-    shard 205/320  5.9m elapsed, ~3m left
-    shard 206/320  5.9m elapsed, ~3m left
-    shard 207/320  5.9m elapsed, ~3m left
-    shard 208/320  5.9m elapsed, ~3m left
-    shard 209/320  5.9m elapsed, ~3m left
-    shard 210/320  6.0m elapsed, ~3m left
-    shard 211/320  6.0m elapsed, ~3m left
-    shard 212/320  6.0m elapsed, ~3m left
-    shard 213/320  6.0m elapsed, ~3m left
-    shard 214/320  6.1m elapsed, ~3m left
-    shard 215/320  6.1m elapsed, ~3m left
-    shard 216/320  6.1m elapsed, ~3m left
-    shard 217/320  6.1m elapsed, ~3m left
-    shard 218/320  6.2m elapsed, ~3m left
-    shard 219/320  6.2m elapsed, ~3m left
-    shard 220/320  6.2m elapsed, ~3m left
-    shard 221/320  6.2m elapsed, ~3m left
-    shard 222/320  6.3m elapsed, ~3m left
-    shard 223/320  6.3m elapsed, ~3m left
-    shard 224/320  6.3m elapsed, ~3m left
-    shard 225/320  6.3m elapsed, ~3m left
-    shard 226/320  6.4m elapsed, ~3m left
-    shard 227/320  6.4m elapsed, ~3m left
-    shard 228/320  6.4m elapsed, ~3m left
-    shard 229/320  6.4m elapsed, ~3m left
-    shard 230/320  6.5m elapsed, ~3m left
-    shard 231/320  6.5m elapsed, ~2m left
-    shard 232/320  6.5m elapsed, ~2m left
-    shard 233/320  6.5m elapsed, ~2m left
-    shard 234/320  6.6m elapsed, ~2m left
-    shard 235/320  6.6m elapsed, ~2m left
-    shard 236/320  6.6m elapsed, ~2m left
-    shard 237/320  6.7m elapsed, ~2m left
-    shard 238/320  6.7m elapsed, ~2m left
-    shard 239/320  6.7m elapsed, ~2m left
-    shard 240/320  6.7m elapsed, ~2m left
-    shard 241/320  6.8m elapsed, ~2m left
-    shard 242/320  6.8m elapsed, ~2m left
-    shard 243/320  6.8m elapsed, ~2m left
-    shard 244/320  6.8m elapsed, ~2m left
-    shard 245/320  6.9m elapsed, ~2m left
-    shard 246/320  6.9m elapsed, ~2m left
-    shard 247/320  6.9m elapsed, ~2m left
-    shard 248/320  6.9m elapsed, ~2m left
-    shard 249/320  7.0m elapsed, ~2m left
-    shard 250/320  7.0m elapsed, ~2m left
-    shard 251/320  7.0m elapsed, ~2m left
-    shard 252/320  7.0m elapsed, ~2m left
-    shard 253/320  7.1m elapsed, ~2m left
-    shard 254/320  7.1m elapsed, ~2m left
-    shard 255/320  7.1m elapsed, ~2m left
-    shard 256/320  7.1m elapsed, ~2m left
-    shard 257/320  7.2m elapsed, ~2m left
-    shard 258/320  7.2m elapsed, ~2m left
-    shard 259/320  7.2m elapsed, ~2m left
-    shard 260/320  7.2m elapsed, ~2m left
-    shard 261/320  7.3m elapsed, ~2m left
-    shard 262/320  7.3m elapsed, ~2m left
-    shard 263/320  7.3m elapsed, ~2m left
-    shard 264/320  7.3m elapsed, ~2m left
-    shard 265/320  7.3m elapsed, ~2m left
-    shard 266/320  7.4m elapsed, ~1m left
-    shard 267/320  7.4m elapsed, ~1m left
-    shard 268/320  7.4m elapsed, ~1m left
-    shard 269/320  7.5m elapsed, ~1m left
-    shard 270/320  7.5m elapsed, ~1m left
-    shard 271/320  7.5m elapsed, ~1m left
-    shard 272/320  7.5m elapsed, ~1m left
-    shard 273/320  7.6m elapsed, ~1m left
-    shard 274/320  7.6m elapsed, ~1m left
-    shard 275/320  7.6m elapsed, ~1m left
-    shard 276/320  7.6m elapsed, ~1m left
-    shard 277/320  7.7m elapsed, ~1m left
-    shard 278/320  7.7m elapsed, ~1m left
-    shard 279/320  7.7m elapsed, ~1m left
-    shard 280/320  7.7m elapsed, ~1m left
-    shard 281/320  7.8m elapsed, ~1m left
-    shard 282/320  7.8m elapsed, ~1m left
-    shard 283/320  7.8m elapsed, ~1m left
-    shard 284/320  7.8m elapsed, ~1m left
-    shard 285/320  7.8m elapsed, ~1m left
-    shard 286/320  7.9m elapsed, ~1m left
-    shard 287/320  7.9m elapsed, ~1m left
-    shard 288/320  7.9m elapsed, ~1m left
-    shard 289/320  8.0m elapsed, ~1m left
-    shard 290/320  8.0m elapsed, ~1m left
-    shard 291/320  8.0m elapsed, ~1m left
-    shard 292/320  8.0m elapsed, ~1m left
-    shard 293/320  8.1m elapsed, ~1m left
-    shard 294/320  8.1m elapsed, ~1m left
-    shard 295/320  8.1m elapsed, ~1m left
-    shard 296/320  8.1m elapsed, ~1m left
-    shard 297/320  8.2m elapsed, ~1m left
-    shard 298/320  8.2m elapsed, ~1m left
-    shard 299/320  8.2m elapsed, ~1m left
-    shard 300/320  8.3m elapsed, ~1m left
-    shard 301/320  8.3m elapsed, ~1m left
-    shard 302/320  8.3m elapsed, ~0m left
-    shard 303/320  8.3m elapsed, ~0m left
-    shard 304/320  8.4m elapsed, ~0m left
-    shard 305/320  8.4m elapsed, ~0m left
-    shard 306/320  8.4m elapsed, ~0m left
-    shard 307/320  8.4m elapsed, ~0m left
-    shard 308/320  8.5m elapsed, ~0m left
-    shard 309/320  8.5m elapsed, ~0m left
-    shard 310/320  8.5m elapsed, ~0m left
-    shard 311/320  8.5m elapsed, ~0m left
-    shard 312/320  8.6m elapsed, ~0m left
-    shard 313/320  8.6m elapsed, ~0m left
-    shard 314/320  8.6m elapsed, ~0m left
-    shard 315/320  8.6m elapsed, ~0m left
-    shard 316/320  8.7m elapsed, ~0m left
-    shard 317/320  8.7m elapsed, ~0m left
-    shard 318/320  8.7m elapsed, ~0m left
-    shard 319/320  8.7m elapsed, ~0m left
-    shard 320/320  8.7m elapsed, ~0m left
-loading Qwen/Qwen3-32B (bfloat16, cuda) ...
-Loading weights:   0%|          | 0/707 [00:00<?, ?it/s]Loading weights:   0%|          | 1/707 [00:00<06:07,  1.92it/s]Loading weights:   1%|          | 4/707 [00:00<01:40,  6.98it/s]Loading weights:   2%|▏         | 13/707 [00:00<00:40, 17.15it/s]Loading weights:   5%|▍         | 34/707 [00:01<00:16, 40.72it/s]Loading weights:   7%|▋         | 48/707 [00:01<00:11, 55.29it/s]Loading weights:   8%|▊         | 56/707 [00:01<00:14, 43.41it/s]Loading weights:   9%|▉         | 65/707 [00:01<00:13, 48.33it/s]Loading weights:  10%|█         | 71/707 [00:01<00:13, 48.10it/s]Loading weights:  11%|█         | 77/707 [00:02<00:13, 47.83it/s]Loading weights:  12%|█▏        | 83/707 [00:02<00:15, 39.67it/s]Loading weights:  13%|█▎        | 92/707 [00:02<00:13, 47.21it/s]Loading weights:  14%|█▍        | 98/707 [00:02<00:13, 43.63it/s]Loading weights:  15%|█▍        | 103/707 [00:02<00:13, 44.42it/s]Loading weights:  15%|█▌        | 108/707 [00:02<00:14, 40.74it/s]Loading weights:  16%|█▌        | 114/707 [00:02<00:13, 42.83it/s]Loading weights:  17%|█▋        | 119/707 [00:03<00:14, 39.21it/s]Loading weights:  18%|█▊        | 125/707 [00:03<00:14, 41.30it/s]Loading weights:  19%|█▊        | 131/707 [00:03<00:12, 45.45it/s]Loading weights:  19%|█▉        | 137/707 [00:03<00:12, 44.89it/s]Loading weights:  20%|██        | 144/707 [00:03<00:11, 49.90it/s]Loading weights:  21%|██        | 150/707 [00:03<00:13, 40.31it/s]Loading weights:  22%|██▏       | 158/707 [00:03<00:11, 46.26it/s]Loading weights:  23%|██▎       | 163/707 [00:04<00:12, 41.95it/s]Loading weights:  24%|██▍       | 169/707 [00:04<00:12, 43.07it/s]Loading weights:  25%|██▍       | 174/707 [00:04<00:13, 40.12it/s]Loading weights:  25%|██▌       | 180/707 [00:04<00:12, 42.87it/s]Loading weights:  26%|██▌       | 185/707 [00:04<00:13, 37.77it/s]Loading weights:  27%|██▋       | 192/707 [00:04<00:13, 38.67it/s]Loading weights:  28%|██▊       | 199/707 [00:04<00:11, 44.99it/s]Loading weights:  29%|██▉       | 204/707 [00:05<00:14, 35.28it/s]Loading weights:  30%|███       | 213/707 [00:05<00:11, 44.35it/s]Loading weights:  31%|███       | 219/707 [00:05<00:12, 40.49it/s]Loading weights:  32%|███▏      | 225/707 [00:05<00:12, 39.61it/s]Loading weights:  33%|███▎      | 232/707 [00:05<00:10, 43.99it/s]Loading weights:  34%|███▎      | 237/707 [00:05<00:13, 35.10it/s]Loading weights:  35%|███▍      | 246/707 [00:06<00:10, 44.25it/s]Loading weights:  36%|███▌      | 252/707 [00:06<00:11, 40.95it/s]Loading weights:  36%|███▋      | 257/707 [00:06<00:10, 42.39it/s]Loading weights:  37%|███▋      | 262/707 [00:06<00:11, 37.92it/s]Loading weights:  38%|███▊      | 267/707 [00:06<00:11, 37.57it/s]Loading weights:  39%|███▉      | 274/707 [00:06<00:09, 44.49it/s]Loading weights:  39%|███▉      | 279/707 [00:07<00:12, 35.34it/s]Loading weights:  41%|████      | 290/707 [00:07<00:08, 47.95it/s]Loading weights:  42%|████▏     | 296/707 [00:07<00:09, 42.89it/s]Loading weights:  43%|████▎     | 302/707 [00:07<00:09, 42.96it/s]Loading weights:  43%|████▎     | 307/707 [00:07<00:09, 44.02it/s]Loading weights:  44%|████▍     | 312/707 [00:07<00:08, 45.19it/s]Loading weights:  45%|████▍     | 317/707 [00:07<00:09, 40.76it/s]Loading weights:  46%|████▌     | 323/707 [00:07<00:08, 42.99it/s]Loading weights:  46%|████▋     | 328/707 [00:08<00:10, 37.86it/s]Loading weights:  47%|████▋     | 333/707 [00:08<00:10, 36.30it/s]Loading weights:  48%|████▊     | 340/707 [00:08<00:08, 43.36it/s]Loading weights:  49%|████▉     | 345/707 [00:08<00:08, 44.61it/s]Loading weights:  50%|████▉     | 350/707 [00:08<00:08, 40.23it/s]Loading weights:  50%|█████     | 356/707 [00:08<00:08, 41.65it/s]Loading weights:  51%|█████     | 361/707 [00:08<00:08, 41.85it/s]Loading weights:  52%|█████▏    | 366/707 [00:09<00:07, 42.63it/s]Loading weights:  52%|█████▏    | 371/707 [00:09<00:08, 39.16it/s]Loading weights:  53%|█████▎    | 378/707 [00:09<00:07, 45.52it/s]Loading weights:  54%|█████▍    | 383/707 [00:09<00:07, 41.02it/s]Loading weights:  55%|█████▌    | 389/707 [00:09<00:07, 43.80it/s]Loading weights:  56%|█████▌    | 394/707 [00:09<00:07, 39.93it/s]Loading weights:  57%|█████▋    | 400/707 [00:09<00:07, 41.87it/s]Loading weights:  57%|█████▋    | 405/707 [00:09<00:08, 37.34it/s]Loading weights:  58%|█████▊    | 410/707 [00:10<00:08, 36.77it/s]Loading weights:  59%|█████▉    | 416/707 [00:10<00:06, 41.81it/s]Loading weights:  60%|█████▉    | 422/707 [00:10<00:06, 46.14it/s]Loading weights:  60%|██████    | 427/707 [00:10<00:07, 39.89it/s]Loading weights:  61%|██████    | 432/707 [00:10<00:07, 39.29it/s]Loading weights:  62%|██████▏   | 438/707 [00:10<00:06, 43.95it/s]Loading weights:  63%|██████▎   | 445/707 [00:10<00:06, 42.88it/s]Loading weights:  64%|██████▎   | 450/707 [00:11<00:05, 44.45it/s]Loading weights:  64%|██████▍   | 455/707 [00:11<00:05, 45.22it/s]Loading weights:  65%|██████▌   | 460/707 [00:11<00:06, 40.57it/s]Loading weights:  66%|██████▌   | 466/707 [00:11<00:05, 42.40it/s]Loading weights:  67%|██████▋   | 471/707 [00:11<00:06, 39.14it/s]Loading weights:  67%|██████▋   | 477/707 [00:11<00:05, 42.29it/s]Loading weights:  68%|██████▊   | 482/707 [00:11<00:05, 38.82it/s]Loading weights:  69%|██████▉   | 488/707 [00:12<00:06, 35.72it/s]Loading weights:  70%|██████▉   | 494/707 [00:12<00:05, 40.92it/s]Loading weights:  71%|███████   | 500/707 [00:12<00:05, 38.61it/s]Loading weights:  72%|███████▏  | 506/707 [00:12<00:04, 41.93it/s]Loading weights:  72%|███████▏  | 511/707 [00:12<00:04, 41.17it/s]Loading weights:  73%|███████▎  | 516/707 [00:12<00:04, 42.87it/s]Loading weights:  74%|███████▍  | 522/707 [00:12<00:04, 41.32it/s]Loading weights:  75%|███████▍  | 527/707 [00:13<00:05, 31.70it/s]Loading weights:  77%|███████▋  | 543/707 [00:13<00:03, 54.04it/s]Loading weights:  78%|███████▊  | 550/707 [00:13<00:03, 49.29it/s]Loading weights:  79%|███████▊  | 556/707 [00:13<00:03, 39.01it/s]Loading weights:  80%|███████▉  | 565/707 [00:13<00:02, 48.03it/s]Loading weights:  81%|████████  | 571/707 [00:13<00:03, 44.89it/s]Loading weights:  82%|████████▏ | 577/707 [00:14<00:03, 41.20it/s]Loading weights:  82%|████████▏ | 582/707 [00:14<00:02, 42.98it/s]Loading weights:  83%|████████▎ | 588/707 [00:14<00:02, 42.68it/s]Loading weights:  84%|████████▍ | 593/707 [00:14<00:02, 44.13it/s]Loading weights:  85%|████████▍ | 598/707 [00:14<00:02, 44.83it/s]Loading weights:  85%|████████▌ | 603/707 [00:14<00:02, 40.60it/s]Loading weights:  86%|████████▌ | 609/707 [00:14<00:02, 43.17it/s]Loading weights:  87%|████████▋ | 614/707 [00:14<00:02, 40.87it/s]Loading weights:  88%|████████▊ | 620/707 [00:15<00:02, 42.63it/s]Loading weights:  88%|████████▊ | 625/707 [00:15<00:02, 37.60it/s]Loading weights:  89%|████████▉ | 630/707 [00:15<00:02, 36.98it/s]Loading weights:  90%|█████████ | 637/707 [00:15<00:01, 43.98it/s]Loading weights:  91%|█████████ | 643/707 [00:15<00:01, 42.23it/s]Loading weights:  92%|█████████▏| 648/707 [00:15<00:01, 43.60it/s]Loading weights:  92%|█████████▏| 653/707 [00:15<00:01, 44.69it/s]Loading weights:  93%|█████████▎| 658/707 [00:16<00:01, 38.65it/s]Loading weights:  94%|█████████▍| 663/707 [00:16<00:01, 32.72it/s]Loading weights:  95%|█████████▌| 675/707 [00:16<00:00, 48.25it/s]Loading weights:  96%|█████████▋| 681/707 [00:16<00:00, 43.04it/s]Loading weights:  97%|█████████▋| 687/707 [00:16<00:00, 41.98it/s]Loading weights:  98%|█████████▊| 693/707 [00:16<00:00, 44.11it/s]Loading weights:  99%|█████████▊| 698/707 [00:16<00:00, 43.65it/s]Loading weights: 100%|█████████▉| 704/707 [00:17<00:00, 45.77it/s]Loading weights: 100%|██████████| 707/707 [00:17<00:00, 41.45it/s]
-  oracle                   hellaswag      7978 contexts ...
-      1000/7978 contexts
-      2000/7978 contexts
-      3000/7978 contexts
-      4000/7978 contexts
-      5000/7978 contexts
-      6000/7978 contexts
-      7000/7978 contexts
-    (750s)
-  zero_copy                hellaswag      7978 contexts ...
-      1000/7978 contexts
-      2000/7978 contexts
-      3000/7978 contexts
-      4000/7978 contexts
-      5000/7978 contexts
-      6000/7978 contexts
-      7000/7978 contexts
-    (749s)
-  mapper_k8_lam0.01        hellaswag      7978 contexts ...
-      1000/7978 contexts
-      2000/7978 contexts
-      3000/7978 contexts
-      4000/7978 contexts
-      5000/7978 contexts
-      6000/7978 contexts
-      7000/7978 contexts
-    (848s)
-
-=== round 2/2: hellaswag[7978..10018] ===
-  capturing Qwen/Qwen3-14B -> /home/ubuntu/kv-transfer/results/kv/Qwen__Qwen3-14B/task_hellaswag_10042_7978-10018: 82/82 shards, ~19.4 GB
-loading Qwen/Qwen3-14B (bfloat16, cuda) ...
-Traceback (most recent call last):
-  File "/home/ubuntu/kv-transfer/scripts/07_eval_tasks.py", line 260, in <module>
-    main()
-  File "/home/ubuntu/kv-transfer/scripts/07_eval_tasks.py", line 188, in main
-    stores[name] = build_store(
-                   ^^^^^^^^^^^^
-  File "/home/ubuntu/kv-transfer/.venv/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-    return func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ubuntu/kv-transfer/src/kvtransfer/kvstore.py", line 198, in build_store
-    model = get_model()
-            ^^^^^^^^^^^
-  File "/home/ubuntu/kv-transfer/src/kvtransfer/runtime.py", line 72, in get
-    self._model = load_model(
-                  ^^^^^^^^^^^
-  File "/home/ubuntu/kv-transfer/src/kvtransfer/runtime.py", line 38, in load_model
-    m = AutoModelForCausalLM.from_pretrained(name, dtype=dtype, device_map=device_map or device)
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ubuntu/kv-transfer/.venv/lib/python3.12/site-packages/transformers/models/auto/auto_factory.py", line 402, in from_pretrained
-    return model_class.from_pretrained(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ubuntu/kv-transfer/.venv/lib/python3.12/site-packages/transformers/modeling_utils.py", line 4313, in from_pretrained
-    loading_info, disk_offload_index = cls._load_pretrained_model(model, state_dict, checkpoint_files, load_config)
-                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ubuntu/kv-transfer/.venv/lib/python3.12/site-packages/transformers/modeling_utils.py", line 4393, in _load_pretrained_model
-    caching_allocator_warmup(model, expanded_device_map, load_config.hf_quantizer)
-  File "/home/ubuntu/kv-transfer/.venv/lib/python3.12/site-packages/transformers/modeling_utils.py", line 5064, in caching_allocator_warmup
-    _ = torch.empty(int(byte_count // 2), dtype=torch.float16, device=device, requires_grad=False)
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 27.51 GiB. GPU 0 has a total capacity of 79.19 GiB of which 17.47 GiB is free. Including non-PyTorch memory, this process has 61.71 GiB memory in use. Of the allocated memory 61.06 GiB is allocated by PyTorch, and 1.18 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)

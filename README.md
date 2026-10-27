@@ -42,17 +42,10 @@ Sanity checks that gate every number: mapping a model onto itself reproduces its
 (max error 2.9e−05); the oracle graft (target's own cache through the same graft path)
 matches standalone within ±0.08 points; RoPE handling is checked against Hugging Face's.
 
-### Reports, in order
+### Figures
 
-| Report | What it covers |
-|---|---|
-| [REPORT.md](REPORT.md) | Pipeline and guardrails on an 8 GB M1; what was verified first |
-| [REPORT2.md](REPORT2.md) | 0.6B → 1.7B: probe, mapper fits, perplexity; original proposal |
-| [REPORT3.md](REPORT3.md) | 0.6B → 1.7B full run on an A10, the k ≥ 2 value-map bug fix, benchmark retention |
-| [REPORT4.md](REPORT4.md) | Scoped replication of the paper's 14B → 32B on an H100 |
-| [REPORT5.md](REPORT5.md) | 4B → 8B and 1.7B → 4B: the depth-vs-width matrix |
-| [VIS.md](VIS.md) | Guide to the plots in `results/plots/` |
-| [GPU.md](GPU.md), [NEXT_STEPS.md](NEXT_STEPS.md) | Rented-GPU setup and the run plan |
+Generated from the saved results by `python scripts/09_writeup_figures.py` into
+`results/plots/writeup/`.
 
 ---
 
@@ -128,7 +121,7 @@ cross-layer top-k selection earns its complexity.
 
 **Qwen3.5 0.8B/2B are out of scope** — they are hybrid linear-attention models
 (`full_attention_interval: 4`, so only 6 of 24 layers keep a KV cache) and are 2 heads ×
-256 dims, not matched-KV. See [REPORT.md §3](REPORT.md).
+256 dims, not matched-KV.
 
 ---
 
@@ -265,9 +258,7 @@ concatenates *all* source KV heads of each selected layer (`k·kv_heads·head_di
 inputs), "enabling cross-head information flow" — matching its quoted mapper parameter
 counts. Pass `--all-heads` to `03_fit.py` to fit that wider mapper (`stream.TopKGrams`
 and `mapper.KVMapper` both take `all_heads=True`); it is not the default because it
-costs more Gram memory and was added after REPORT3/REPORT4 both found the same
-multi-layer R² shortfall at very different model scales, which points at this feature
-difference rather than scale. See `NEXT_STEPS.md` for the comparison still to run.
+costs more Gram memory. All results in the table above use all-heads features.
 
 ### Expected runtime
 
@@ -336,7 +327,7 @@ Expected output, in `results/<pair>/eval_tasks.json` (HellaSwag acc_norm):
 | mapper_k8_lam0.01_allheads | **0.7156** | **0.6325** |
 
 plus `heldout_r2.json` (k = 8 key R² ≈ 0.75 and 0.71) and `probe_report_n500.txt`.
-14B → 32B: `configs/qwen3_14b_to_32b_replication.yaml`, see [REPORT4.md](REPORT4.md)
+14B → 32B: `configs/qwen3_14b_to_32b_replication.yaml` on an 80 GB GPU, see [GPU.md](GPU.md)
 (k = 8 all-heads acc_norm 0.8093). The committed `results/` directories hold the outputs
 of these runs; fitted mappers (2.3 GB each) are not committed.
 
@@ -348,6 +339,6 @@ of these runs; fitted mappers (2.3 GB each) are not committed.
 |---|---|
 | Pipeline: capture → probe → fit → eval | **done**, guardrails green |
 | Paper's 14B → 32B replication | **done**: 97.8% HellaSwag retention at k = 8 |
-| Family matrix (four pairs) | **done**: REPORT5 |
+| Family matrix (four pairs) | **done** |
 | Other benchmarks, length generalisation, mapper anatomy | next |
 | Write-up | in progress |
