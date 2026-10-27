@@ -1,0 +1,134 @@
+{
+  "mapper_k1_lam0.001_ho2": {
+    "k": "k1",
+    "lam": 0.001,
+    "all_heads": false,
+    "holdout_shards": 2,
+    "n_shards": 13,
+    "train_r2_k": 0.5367151122274143,
+    "train_r2_v": 0.4015361461123185,
+    "heldout_r2_k": 0.5304013719516141,
+    "heldout_r2_v": 0.39712332880922724
+  },
+  "mapper_k1_lam0.01_ho2": {
+    "k": "k1",
+    "lam": 0.01,
+    "all_heads": false,
+    "holdout_shards": 2,
+    "n_shards": 13,
+    "train_r2_k": 0.5323609205495033,
+    "train_r2_v": 0.4014700524775045,
+    "heldout_r2_k": 0.5262634702292937,
+    "heldout_r2_v": 0.397086850400748
+  },
+  "mapper_k1_lam0.1_ho2": {
+    "k": "k1",
+    "lam": 0.1,
+    "all_heads": false,
+    "holdout_shards": 2,
+    "n_shards": 13,
+    "train_r2_k": 0.5076330125198832,
+    "train_r2_v": 0.39716413763484787,
+    "heldout_r2_k": 0.5021018693223596,
+    "heldout_r2_v": 0.39299573875697597
+  },
+  "mapper_k8_lam0.001_ho2": {
+    "k": "k8",
+    "lam": 0.001,
+    "all_heads": false,
+    "holdout_shards": 2,
+    "n_shards": 13,
+    "train_r2_k": 0.655740214378706,
+    "train_r2_v": 0.5337077534225371,
+    "heldout_r2_k": 0.6398538112906473,
+    "heldout_r2_v": 0.5158185458609036
+  },
+  "mapper_k8_lam0.01_ho2": {
+    "k": "k8",
+    "lam": 0.01,
+    "all_heads": false,
+    "holdout_shards": 2,
+    "n_shards": 13,
+    "train_r2_k": 0.6508890540738191,
+    "train_r2_v": 0.520968971773982,
+    "heldout_r2_k": 0.6364220284989902,
+    "heldout_r2_v": 0.5045671017973551
+  },
+  "mapper_k8_lam0.1_ho2": {
+    "k": "k8",
+    "lam": 0.1,
+    "all_heads": false,
+    "holdout_shards": 2,
+    "n_shards": 13,
+    "train_r2_k": 0.6271429131073611,
+    "train_r2_v": 0.4869369223846921,
+    "heldout_r2_k": 0.6158064343035221,
+    "heldout_r2_v": 0.47441639272230013
+  },
+  "mapper_k1_lam0.001_allheads_ho2": {
+    "k": "k1",
+    "lam": 0.001,
+    "all_heads": true,
+    "holdout_shards": 2,
+    "n_shards": 13,
+    "train_r2_k": 0.6676292291709355,
+    "train_r2_v": 0.5572935784501689,
+    "heldout_r2_k": 0.6519232227333954,
+    "heldout_r2_v": 0.5392090449375766
+  },
+  "mapper_k1_lam0.01_allheads_ho2": {
+    "k": "k1",
+    "lam": 0.01,
+    "all_heads": true,
+    "holdout_shards": 2,
+    "n_shards": 13,
+    "train_r2_k": 0.6571874685053315,
+    "train_r2_v": 0.5506840417427676,
+    "heldout_r2_k": 0.6433254272810051,
+    "heldout_r2_v": 0.5343686882406473
+  },
+  "mapper_k1_lam0.1_allheads_ho2": {
+    "k": "k1",
+    "lam": 0.1,
+    "all_heads": true,
+    "holdout_shards": 2,
+    "n_shards": 13,
+    "train_r2_k": 0.6256521531779852,
+    "train_r2_v": 0.530423514811056,
+    "heldout_r2_k": 0.6147516316601208,
+    "heldout_r2_v": 0.5176012488082051
+  },
+  "mapper_k8_lam0.001_allheads_ho2": {
+    "k": "k8",
+    "lam": 0.001,
+    "all_heads": true,
+    "holdout_shards": 2,
+    "n_shards": 13,
+    "train_r2_k": 0.7606877615409238,
+    "train_r2_v": 0.6645916073716113,
+    "heldout_r2_k": 0.7118324903505189,
+    "heldout_r2_v": 0.6015150222395148
+  },
+  "mapper_k8_lam0.01_allheads_ho2": {
+    "k": "k8",
+    "lam": 0.01,
+    "all_heads": true,
+    "holdout_shards": 2,
+    "n_shards": 13,
+    "train_r2_k": 0.7467623988964728,
+    "train_r2_v": 0.6406221768951842,
+    "heldout_r2_k": 0.7100458025400128,
+    "heldout_r2_v": 0.5923394689868603
+  },
+  "mapper_k8_lam0.1_allheads_ho2": {
+    "k": "k8",
+    "lam": 0.1,
+    "all_heads": true,
+    "holdout_shards": 2,
+    "n_shards": 13,
+    "train_r2_k": 0.7188163607248238,
+    "train_r2_v": 0.5993788823751467,
+    "heldout_r2_k": 0.6950695948409182,
+    "heldout_r2_v": 0.5679905628785491
+  }
+}

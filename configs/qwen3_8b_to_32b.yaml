@@ -1,0 +1,45 @@
+# Qwen3-8B -> Qwen3-32B: depth AND width change (36 -> 64 layers, hidden 4096 -> 5120),
+# same target as 14B -> 32B. The 32B's k_proj weights are copies of the 14B's
+# (scripts/11_weight_similarity.py), so 14B -> 32B can't separate "big models map well"
+# from "the target contains the source". Here the widths differ, so no layer can be a
+# copy: a sharp probe diagonal would point to scale, a smear (like 1.7B -> 4B) to lineage.
+# Same protocol as the other pairs: 500x1024 calibration, all-heads, lambda=0.01.
+# Hardware: one 80 GB GPU (32B in bf16 is ~64 GB). Disk: ~19 GB (8B) + ~34 GB (32B)
+# calibration stores, plus ~80 GB of weights.
+source: Qwen/Qwen3-8B
+target: Qwen/Qwen3-32B
+output_dir: results/qwen3_8b_to_32b
+
+calibration:
+  dataset: fineweb-edu
+  n_seqs: 500          # paper: 500 sequences
+  seq_len: 1024        # paper: 1024 tokens
+  stride: 4            # ~128K tokens, the paper's calibration size
+  seed: 0
+
+runtime:
+  chunk: 25            # sequences per store shard (20 shards; --holdout-shards 2 = last 50 seqs)
+  batch_size: 4
+  dtype: bfloat16
+  store_dtype: float16 # KV on disk; capture refuses non-finite values
+  device: cuda
+  store_dir: results/kv
+
+probe:
+  gram_dtype: float32
+  gram_device: cuda    # 36x64x8 grid, smaller than 14B->32B's 40x64x8
+  rope_diagonal_only: true
+
+fit:
+  lambdas: [0.01]
+  k_sweep: [8]         # pass --k explicitly
+  max_gram_gb: 40
+  gram_device: cuda
+
+eval:
+  wikitext_seqs: 64
+  prefix_len: 512
+  store_budget_gb: 60  # 8B source KV ~144 KB/token at 36 layers
+  keep_stores: false
+  tasks:
+    hellaswag: {num_fewshot: 0}

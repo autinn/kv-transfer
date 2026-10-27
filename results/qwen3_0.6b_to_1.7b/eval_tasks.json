@@ -1,0 +1,42 @@
+{
+  "standalone": {
+    "hellaswag": {
+      "acc": 0.46106353316072496,
+      "acc_norm": 0.6030671181039634,
+      "n": 10042,
+      "retention_pct": 100.0
+    }
+  },
+  "oracle": {
+    "hellaswag": {
+      "acc": 0.46116311491734713,
+      "acc_norm": 0.6030671181039634,
+      "n": 10042,
+      "retention_pct": 100.0
+    }
+  },
+  "zero_copy": {
+    "hellaswag": {
+      "acc": 0.3007369049990042,
+      "acc_norm": 0.33808006373232424,
+      "n": 10042,
+      "retention_pct": 56.06010568031704
+    }
+  },
+  "mapper_k1_lam0.01_allheads": {
+    "hellaswag": {
+      "acc": 0.41943835889265085,
+      "acc_norm": 0.5384385580561641,
+      "n": 10042,
+      "retention_pct": 89.28335535006605
+    }
+  },
+  "mapper_k8_lam0.01_allheads": {
+    "hellaswag": {
+      "acc": 0.4284007169886477,
+      "acc_norm": 0.5562636924915355,
+      "n": 10042,
+      "retention_pct": 92.23910171730513
+    }
+  }
+}
