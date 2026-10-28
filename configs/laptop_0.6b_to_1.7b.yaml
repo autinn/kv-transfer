@@ -1,0 +1,37 @@
+# Laptop trial: the whole method on Qwen3-0.6B -> 1.7B, small enough for an 8 GB Mac or a
+# CPU-only machine. Fits one all-heads k=1 mapper and scores it on 200 HellaSwag questions.
+# The point is to check the code end to end, not to reproduce the headline numbers: with
+# 64 calibration sequences and 200 questions, expect retention well below the full run's
+# 89% and a few points of noise. Run with: bash scripts/run_laptop.sh
+source: Qwen/Qwen3-0.6B
+target: Qwen/Qwen3-1.7B
+output_dir: results/laptop_0.6b_to_1.7b
+
+calibration:
+  dataset: fineweb-edu
+  n_seqs: 64           # full run: 500
+  seq_len: 512         # full run: 1024
+  stride: 4            # 8,192 observations per head, 8x the 1,024 features of k=1 all-heads
+  seed: 0
+
+runtime:
+  chunk: 8             # sequences per store shard
+  batch_size: 1
+  dtype: float16
+  store_dtype: float16
+  device: mps          # run_laptop.sh overrides with DEVICE=cpu
+  store_dir: results/kv
+
+probe:
+  gram_dtype: float32
+  rope_diagonal_only: true
+
+fit:
+  lambdas: [0.01]
+  k_sweep: [1]         # k=8 would need 8,192 features: more than the observations here
+  max_gram_gb: 2
+
+eval:
+  store_budget_gb: 2
+  tasks:
+    hellaswag: {num_fewshot: 0, limit: 200}
